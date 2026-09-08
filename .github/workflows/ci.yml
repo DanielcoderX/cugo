@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      # Note: GitHub Actions hosted runners do not have NVIDIA GPUs or nvcuda.dll.
+      # Integration tests checking GPU hardware will gracefully skip when the driver is absent.
+      # Unit tests (e.g. CUresult mapping, argument packing) execute fully.
+      - name: Run unit & integration tests
+        run: go test -v ./...
+
+      - name: Build examples
+        run: |
+          go build -v ./examples/device-info

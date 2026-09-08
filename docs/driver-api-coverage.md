@@ -61,3 +61,8 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuMemPoolTrimTo` | Yes | `MemPool.TrimTo` | Stable | Trim unallocated memory in pool |
 | `cuMemPoolGetAttribute` | Yes | `MemPool.ReservedMemCurrent`, etc. | Stable | Query memory pool metrics |
 | `cuMemPoolSetAttribute` | Yes | `MemPool.SetReleaseThreshold` | Stable | Tune memory pool thresholds |
+| `cuCtxSynchronize` | Yes | `Context.Synchronize` | Stable | Block on all tasks in current context |
+| `cuLinkCreate_v2` | Yes | `Context.CreateLinker` | Stable | Create dynamic JIT linker state |
+| `cuLinkAddData_v2` | Yes | `Linker.AddPTX`, `Linker.AddCubin` | Stable | Add PTX/CUBIN code to linker |
+| `cuLinkComplete` | Yes | `Linker.Complete` | Stable | Finalize and retrieve CUBIN binary |
+| `cuLinkDestroy` | Yes | `Linker.Destroy` | Stable | Free JIT linker state |

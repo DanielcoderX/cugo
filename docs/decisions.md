@@ -114,3 +114,13 @@
 - **Consequences**:
   - Zero synchronization on allocation and deallocation; memory is reused immediately within the same stream.
 
+## ADR-0014: Dynamic JIT Linker API
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Applications generating PTX code dynamically at runtime or linking modular PTX components need on-the-fly compilation to device-native CUBIN bytecode without running external processes.
+- **Decision**: Expose `Context.CreateLinker()`, `Linker.AddPTX()`, `Linker.AddCubin()`, and `Linker.Complete()` wrapping `cuLinkCreate_v2`, `cuLinkAddData_v2`, `cuLinkComplete`, and `cuLinkDestroy`.
+- **Consequences**:
+  - Direct in-process JIT compilation and linking of PTX strings/files to native hardware cubin binaries.
+  - Returned cubin bytecode is immediately loadable via `Context.LoadModuleData()`.
+
+

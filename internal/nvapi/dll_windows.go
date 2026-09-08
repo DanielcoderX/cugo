@@ -30,10 +30,11 @@ var (
 	procDeviceGetAttribute = nvcuda.NewProc("cuDeviceGetAttribute")
 
 	// Context Management
-	procCtxCreate     = nvcuda.NewProc("cuCtxCreate_v2")
-	procCtxDestroy    = nvcuda.NewProc("cuCtxDestroy_v2")
-	procCtxSetCurrent = nvcuda.NewProc("cuCtxSetCurrent")
-	procCtxGetCurrent = nvcuda.NewProc("cuCtxGetCurrent")
+	procCtxCreate      = nvcuda.NewProc("cuCtxCreate_v2")
+	procCtxDestroy     = nvcuda.NewProc("cuCtxDestroy_v2")
+	procCtxSetCurrent  = nvcuda.NewProc("cuCtxSetCurrent")
+	procCtxGetCurrent  = nvcuda.NewProc("cuCtxGetCurrent")
+	procCtxSynchronize = nvcuda.NewProc("cuCtxSynchronize")
 
 	// Memory Management
 	procMemAlloc        = nvcuda.NewProc("cuMemAlloc_v2")
@@ -98,6 +99,12 @@ var (
 	procMemPoolSetAttribute = nvcuda.NewProc("cuMemPoolSetAttribute")
 	procMemPoolGetAttribute = nvcuda.NewProc("cuMemPoolGetAttribute")
 	procDeviceGetDefaultMemPool = nvcuda.NewProc("cuDeviceGetDefaultMemPool")
+
+	// Dynamic JIT Linker
+	procLinkCreate   = nvcuda.NewProc("cuLinkCreate_v2")
+	procLinkAddData  = nvcuda.NewProc("cuLinkAddData_v2")
+	procLinkComplete = nvcuda.NewProc("cuLinkComplete")
+	procLinkDestroy  = nvcuda.NewProc("cuLinkDestroy")
 )
 
 // CheckDriver verifies whether nvcuda.dll can be dynamically loaded.
@@ -219,6 +226,15 @@ func CuCtxGetCurrent(pctx *CUcontext) error {
 		return fmt.Errorf("%w: cuCtxGetCurrent: %v", ErrProcNotFound, err)
 	}
 	r, _, _ := procCtxGetCurrent.Call(uintptr(unsafe.Pointer(pctx)))
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxSynchronize blocks until all tasks in the current context have completed.
+func CuCtxSynchronize() error {
+	if err := procCtxSynchronize.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxSynchronize: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxSynchronize.Call()
 	return ResultToError(CUresult(r))
 }
 
@@ -803,5 +819,80 @@ func CuMemPoolGetAttribute(pool CUmemoryPool, attr CUmemPool_attribute, value un
 		return fmt.Errorf("%w: cuMemPoolGetAttribute: %v", ErrProcNotFound, err)
 	}
 	r, _, _ := procMemPoolGetAttribute.Call(uintptr(pool), uintptr(attr), uintptr(value))
+	return ResultToError(CUresult(r))
+}
+
+// CuLinkCreate creates a pending JIT linker invocation state.
+func CuLinkCreate(
+	numOptions uint32,
+	options *CUjit_option,
+	optionValues *unsafe.Pointer,
+	stateOut *CUlinkState,
+) error {
+	if err := procLinkCreate.Find(); err != nil {
+		return fmt.Errorf("%w: cuLinkCreate_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procLinkCreate.Call(
+		uintptr(numOptions),
+		uintptr(unsafe.Pointer(options)),
+		uintptr(unsafe.Pointer(optionValues)),
+		uintptr(unsafe.Pointer(stateOut)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuLinkAddData adds an input (e.g. PTX or Cubin bytes) to a pending linker invocation.
+func CuLinkAddData(
+	state CUlinkState,
+	inputType CUjitInputType,
+	data []byte,
+	name string,
+	numOptions uint32,
+	options *CUjit_option,
+	optionValues *unsafe.Pointer,
+) error {
+	if len(data) == 0 {
+		return errors.New("cugo: empty link input data")
+	}
+	if err := procLinkAddData.Find(); err != nil {
+		return fmt.Errorf("%w: cuLinkAddData_v2: %v", ErrProcNotFound, err)
+	}
+	var pName uintptr
+	if len(name) > 0 {
+		cName := append([]byte(name), 0)
+		pName = uintptr(unsafe.Pointer(&cName[0]))
+	}
+	r, _, _ := procLinkAddData.Call(
+		uintptr(state),
+		uintptr(inputType),
+		uintptr(unsafe.Pointer(&data[0])),
+		uintptr(len(data)),
+		pName,
+		uintptr(numOptions),
+		uintptr(unsafe.Pointer(options)),
+		uintptr(unsafe.Pointer(optionValues)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuLinkComplete completes the pending linker action and returns the cubin image.
+func CuLinkComplete(state CUlinkState, cubinOut *unsafe.Pointer, sizeOut *uint64) error {
+	if err := procLinkComplete.Find(); err != nil {
+		return fmt.Errorf("%w: cuLinkComplete: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procLinkComplete.Call(
+		uintptr(state),
+		uintptr(unsafe.Pointer(cubinOut)),
+		uintptr(unsafe.Pointer(sizeOut)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuLinkDestroy destroys state for a JIT linker invocation.
+func CuLinkDestroy(state CUlinkState) error {
+	if err := procLinkDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuLinkDestroy: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procLinkDestroy.Call(uintptr(state))
 	return ResultToError(CUresult(r))
 }

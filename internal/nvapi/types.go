@@ -13,6 +13,39 @@ type CUevent uintptr
 type CUgraph uintptr
 type CUgraphExec uintptr
 type CUmemoryPool uintptr
+type CUlinkState uintptr
+
+// CUjitInputType specifies device-code input types to the JIT linker.
+type CUjitInputType int32
+
+const (
+	CU_JIT_INPUT_CUBIN     CUjitInputType = 0
+	CU_JIT_INPUT_PTX       CUjitInputType = 1
+	CU_JIT_INPUT_FATBINARY CUjitInputType = 2
+	CU_JIT_INPUT_OBJECT    CUjitInputType = 3
+	CU_JIT_INPUT_LIBRARY   CUjitInputType = 4
+)
+
+// CUjit_option specifies online compiler/linker options.
+type CUjit_option int32
+
+const (
+	CU_JIT_MAX_REGISTERS               CUjit_option = 0
+	CU_JIT_THREADS_PER_BLOCK           CUjit_option = 1
+	CU_JIT_WALL_TIME                   CUjit_option = 2
+	CU_JIT_INFO_LOG_BUFFER             CUjit_option = 3
+	CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES  CUjit_option = 4
+	CU_JIT_ERROR_LOG_BUFFER            CUjit_option = 5
+	CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES CUjit_option = 6
+	CU_JIT_OPTIMIZATION_LEVEL          CUjit_option = 7
+	CU_JIT_TARGET_FROM_CUCONTEXT       CUjit_option = 8
+	CU_JIT_TARGET                      CUjit_option = 9
+	CU_JIT_FALLBACK_STRATEGY           CUjit_option = 10
+	CU_JIT_GENERATE_DEBUG_INFO         CUjit_option = 11
+	CU_JIT_LOG_VERBOSE                 CUjit_option = 12
+	CU_JIT_GENERATE_LINE_INFO          CUjit_option = 13
+	CU_JIT_CACHE_MODE                  CUjit_option = 14
+)
 
 // CU_DEVICE_CPU indicates CPU device target for prefetching.
 const CU_DEVICE_CPU CUdevice = -1

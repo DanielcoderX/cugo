@@ -106,3 +106,11 @@ func (c *Context) Device() Device {
 func (c *Context) Handle() uintptr {
 	return uintptr(c.handle)
 }
+
+// Synchronize blocks until the device has completed all preceding requested tasks in this context.
+func (c *Context) Synchronize() error {
+	if err := c.EnsureCurrent(); err != nil {
+		return err
+	}
+	return nvapi.CuCtxSynchronize()
+}

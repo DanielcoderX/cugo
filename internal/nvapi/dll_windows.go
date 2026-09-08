@@ -74,6 +74,30 @@ var (
 	procEventRecord      = nvcuda.NewProc("cuEventRecord")
 	procEventSynchronize = nvcuda.NewProc("cuEventSynchronize")
 	procEventElapsedTime = nvcuda.NewProc("cuEventElapsedTime")
+
+	// Occupancy Calculation
+	procOccupancyMaxActiveBlocksPerMultiprocessor = nvcuda.NewProc("cuOccupancyMaxActiveBlocksPerMultiprocessor")
+	procOccupancyMaxPotentialBlockSize           = nvcuda.NewProc("cuOccupancyMaxPotentialBlockSize")
+
+	// CUDA Graph Management
+	procGraphCreate        = nvcuda.NewProc("cuGraphCreate")
+	procGraphDestroy       = nvcuda.NewProc("cuGraphDestroy")
+	procStreamBeginCapture = nvcuda.NewProc("cuStreamBeginCapture_v2")
+	procStreamEndCapture   = nvcuda.NewProc("cuStreamEndCapture")
+	procStreamIsCapturing  = nvcuda.NewProc("cuStreamIsCapturing")
+	procGraphInstantiate   = nvcuda.NewProc("cuGraphInstantiate_v2")
+	procGraphLaunch        = nvcuda.NewProc("cuGraphLaunch")
+	procGraphExecDestroy   = nvcuda.NewProc("cuGraphExecDestroy")
+
+	// Stream-Ordered Memory Allocator
+	procMemAllocAsync       = nvcuda.NewProc("cuMemAllocAsync")
+	procMemFreeAsync        = nvcuda.NewProc("cuMemFreeAsync")
+	procMemPoolCreate       = nvcuda.NewProc("cuMemPoolCreate")
+	procMemPoolDestroy      = nvcuda.NewProc("cuMemPoolDestroy")
+	procMemPoolTrimTo       = nvcuda.NewProc("cuMemPoolTrimTo")
+	procMemPoolSetAttribute = nvcuda.NewProc("cuMemPoolSetAttribute")
+	procMemPoolGetAttribute = nvcuda.NewProc("cuMemPoolGetAttribute")
+	procDeviceGetDefaultMemPool = nvcuda.NewProc("cuDeviceGetDefaultMemPool")
 )
 
 // CheckDriver verifies whether nvcuda.dll can be dynamically loaded.
@@ -592,5 +616,192 @@ func CuEventElapsedTime(milliseconds *float32, hStart CUevent, hEnd CUevent) err
 		uintptr(hStart),
 		uintptr(hEnd),
 	)
+	return ResultToError(CUresult(r))
+}
+
+// CuOccupancyMaxActiveBlocksPerMultiprocessor returns the maximum active blocks per multiprocessor for a given kernel and block size.
+func CuOccupancyMaxActiveBlocksPerMultiprocessor(
+	numBlocks *int32,
+	fn CUfunction,
+	blockSize int32,
+	dynamicSMemSize uint64,
+) error {
+	if err := procOccupancyMaxActiveBlocksPerMultiprocessor.Find(); err != nil {
+		return fmt.Errorf("%w: cuOccupancyMaxActiveBlocksPerMultiprocessor: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procOccupancyMaxActiveBlocksPerMultiprocessor.Call(
+		uintptr(unsafe.Pointer(numBlocks)),
+		uintptr(fn),
+		uintptr(blockSize),
+		uintptr(dynamicSMemSize),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuOccupancyMaxPotentialBlockSize suggests a block size that yields maximum occupancy.
+func CuOccupancyMaxPotentialBlockSize(
+	minGridSize *int32,
+	blockSize *int32,
+	fn CUfunction,
+	blockSizeToDynamicSMemSize uintptr,
+	dynamicSMemSize uint64,
+	blockSizeLimit int32,
+) error {
+	if err := procOccupancyMaxPotentialBlockSize.Find(); err != nil {
+		return fmt.Errorf("%w: cuOccupancyMaxPotentialBlockSize: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procOccupancyMaxPotentialBlockSize.Call(
+		uintptr(unsafe.Pointer(minGridSize)),
+		uintptr(unsafe.Pointer(blockSize)),
+		uintptr(fn),
+		blockSizeToDynamicSMemSize,
+		uintptr(dynamicSMemSize),
+		uintptr(blockSizeLimit),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphCreate creates a new CUDA graph.
+func CuGraphCreate(phGraph *CUgraph, flags uint32) error {
+	if err := procGraphCreate.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphCreate: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphCreate.Call(uintptr(unsafe.Pointer(phGraph)), uintptr(flags))
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphDestroy destroys a CUDA graph.
+func CuGraphDestroy(hGraph CUgraph) error {
+	if err := procGraphDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphDestroy: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphDestroy.Call(uintptr(hGraph))
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamBeginCapture begins graph stream capture on the specified stream.
+func CuStreamBeginCapture(hStream CUstream, mode CUstreamCaptureMode) error {
+	if err := procStreamBeginCapture.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamBeginCapture_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamBeginCapture.Call(uintptr(hStream), uintptr(mode))
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamEndCapture ends graph stream capture and returns the captured graph.
+func CuStreamEndCapture(hStream CUstream, phGraph *CUgraph) error {
+	if err := procStreamEndCapture.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamEndCapture: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamEndCapture.Call(uintptr(hStream), uintptr(unsafe.Pointer(phGraph)))
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamIsCapturing returns whether a stream is currently capturing.
+func CuStreamIsCapturing(hStream CUstream, captureStatus *CUstreamCaptureStatus) error {
+	if err := procStreamIsCapturing.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamIsCapturing: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamIsCapturing.Call(uintptr(hStream), uintptr(unsafe.Pointer(captureStatus)))
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphInstantiate instantiates an executable graph from a graph template.
+func CuGraphInstantiate(phGraphExec *CUgraphExec, hGraph CUgraph) error {
+	if err := procGraphInstantiate.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphInstantiate_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphInstantiate.Call(
+		uintptr(unsafe.Pointer(phGraphExec)),
+		uintptr(hGraph),
+		0,
+		0,
+		0,
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphLaunch executes an instantiated graph on a stream.
+func CuGraphLaunch(hGraphExec CUgraphExec, hStream CUstream) error {
+	if err := procGraphLaunch.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphLaunch: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphLaunch.Call(uintptr(hGraphExec), uintptr(hStream))
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphExecDestroy destroys an executable graph.
+func CuGraphExecDestroy(hGraphExec CUgraphExec) error {
+	if err := procGraphExecDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphExecDestroy: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphExecDestroy.Call(uintptr(hGraphExec))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemAllocAsync allocates memory asynchronously on a stream.
+func CuMemAllocAsync(dptr *CUdeviceptr, bytesize uint64, hStream CUstream) error {
+	if err := procMemAllocAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemAllocAsync: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemAllocAsync.Call(
+		uintptr(unsafe.Pointer(dptr)),
+		uintptr(bytesize),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemFreeAsync frees memory asynchronously on a stream.
+func CuMemFreeAsync(dptr CUdeviceptr, hStream CUstream) error {
+	if err := procMemFreeAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemFreeAsync: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemFreeAsync.Call(uintptr(dptr), uintptr(hStream))
+	return ResultToError(CUresult(r))
+}
+
+// CuDeviceGetDefaultMemPool returns the default memory pool for the specified device.
+func CuDeviceGetDefaultMemPool(pool *CUmemoryPool, dev CUdevice) error {
+	if err := procDeviceGetDefaultMemPool.Find(); err != nil {
+		return fmt.Errorf("%w: cuDeviceGetDefaultMemPool: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procDeviceGetDefaultMemPool.Call(uintptr(unsafe.Pointer(pool)), uintptr(dev))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemPoolDestroy destroys a memory pool.
+func CuMemPoolDestroy(pool CUmemoryPool) error {
+	if err := procMemPoolDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemPoolDestroy: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemPoolDestroy.Call(uintptr(pool))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemPoolTrimTo trims memory pool reservations down to minBytesToKeep.
+func CuMemPoolTrimTo(pool CUmemoryPool, minBytesToKeep uint64) error {
+	if err := procMemPoolTrimTo.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemPoolTrimTo: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemPoolTrimTo.Call(uintptr(pool), uintptr(minBytesToKeep))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemPoolSetAttribute sets an attribute on a memory pool.
+func CuMemPoolSetAttribute(pool CUmemoryPool, attr CUmemPool_attribute, value unsafe.Pointer) error {
+	if err := procMemPoolSetAttribute.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemPoolSetAttribute: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemPoolSetAttribute.Call(uintptr(pool), uintptr(attr), uintptr(value))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemPoolGetAttribute queries an attribute from a memory pool.
+func CuMemPoolGetAttribute(pool CUmemoryPool, attr CUmemPool_attribute, value unsafe.Pointer) error {
+	if err := procMemPoolGetAttribute.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemPoolGetAttribute: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemPoolGetAttribute.Call(uintptr(pool), uintptr(attr), uintptr(value))
 	return ResultToError(CUresult(r))
 }

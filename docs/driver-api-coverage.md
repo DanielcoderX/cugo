@@ -45,3 +45,19 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuMemcpyPeer` | Yes | `driver.CopyPeer` | Stable | Direct GPU-to-GPU memory copy |
 | `cuMemcpyPeerAsync` | Yes | `driver.CopyPeerAsync` | Stable | Asynchronous GPU-to-GPU copy |
 | `cuDeviceGetP2PAttribute` | Yes | `Device.P2PAttribute` | Stable | Query P2P link performance & attributes |
+| `cuOccupancyMaxActiveBlocksPerMultiprocessor` | Yes | `Function.MaxActiveBlocksPerMultiprocessor` | Stable | Calculate active blocks per SM |
+| `cuOccupancyMaxPotentialBlockSize` | Yes | `Function.SuggestBlockSize` | Stable | Auto-tune block and grid sizes |
+| `cuGraphCreate` | Yes | `internal/nvapi.CuGraphCreate` | Stable | Create CUDA graph |
+| `cuGraphDestroy` | Yes | `Graph.Destroy` | Stable | Destroy CUDA graph |
+| `cuStreamBeginCapture_v2` | Yes | `Stream.BeginCapture` | Stable | Begin stream graph capture |
+| `cuStreamEndCapture` | Yes | `Stream.EndCapture` | Stable | End capture and create graph |
+| `cuStreamIsCapturing` | Yes | `Stream.IsCapturing` | Stable | Query stream capture state |
+| `cuGraphInstantiate_v2` | Yes | `Graph.Instantiate` | Stable | Instantiate executable graph DAG |
+| `cuGraphLaunch` | Yes | `GraphExec.Launch` | Stable | Replay graph on stream |
+| `cuGraphExecDestroy` | Yes | `GraphExec.Destroy` | Stable | Destroy executable graph |
+| `cuMemAllocAsync` | Yes | `Context.AllocAsync` | Stable | Stream-ordered async allocation |
+| `cuMemFreeAsync` | Yes | `Context.FreeAsync` | Stable | Stream-ordered async free |
+| `cuDeviceGetDefaultMemPool` | Yes | `Device.DefaultMemPool` | Stable | Query default memory pool |
+| `cuMemPoolTrimTo` | Yes | `MemPool.TrimTo` | Stable | Trim unallocated memory in pool |
+| `cuMemPoolGetAttribute` | Yes | `MemPool.ReservedMemCurrent`, etc. | Stable | Query memory pool metrics |
+| `cuMemPoolSetAttribute` | Yes | `MemPool.SetReleaseThreshold` | Stable | Tune memory pool thresholds |

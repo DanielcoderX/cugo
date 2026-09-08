@@ -10,6 +10,9 @@ type CUmodule uintptr
 type CUfunction uintptr
 type CUstream uintptr
 type CUevent uintptr
+type CUgraph uintptr
+type CUgraphExec uintptr
+type CUmemoryPool uintptr
 
 // CU_DEVICE_CPU indicates CPU device target for prefetching.
 const CU_DEVICE_CPU CUdevice = -1
@@ -40,8 +43,40 @@ const (
 	CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK                     CUdevice_P2PAttribute = 0x01
 	CU_DEVICE_P2P_ATTRIBUTE_ACCESS_SUPPORTED                     CUdevice_P2PAttribute = 0x02
 	CU_DEVICE_P2P_ATTRIBUTE_NATIVE_ATOMIC_SUPPORTED              CUdevice_P2PAttribute = 0x03
+	CU_DEVICE_P2P_ATTRIBUTE_ARRAY_ACCESS_ACCESS_SUPPORTED        CUdevice_P2PAttribute = 0x04
 	CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED          CUdevice_P2PAttribute = 0x04
-	CU_DEVICE_P2P_ATTRIBUTE_ONLY_PARTIAL_NATIVE_ATOMIC_SUPPORTED CUdevice_P2PAttribute = 0x05
+)
+
+// CUstreamCaptureMode specifies how work dispatched during stream capture is tracked.
+type CUstreamCaptureMode int32
+
+const (
+	CU_STREAM_CAPTURE_MODE_GLOBAL       CUstreamCaptureMode = 0
+	CU_STREAM_CAPTURE_MODE_THREAD_LOCAL CUstreamCaptureMode = 1
+	CU_STREAM_CAPTURE_MODE_RELAXED      CUstreamCaptureMode = 2
+)
+
+// CUstreamCaptureStatus represents the capture status of a stream.
+type CUstreamCaptureStatus int32
+
+const (
+	CU_STREAM_CAPTURE_STATUS_NONE        CUstreamCaptureStatus = 0
+	CU_STREAM_CAPTURE_STATUS_ACTIVE      CUstreamCaptureStatus = 1
+	CU_STREAM_CAPTURE_STATUS_INVALIDATED CUstreamCaptureStatus = 2
+)
+
+// CUmemPool_attribute specifies attributes for a memory pool.
+type CUmemPool_attribute int32
+
+const (
+	CU_MEMPOOL_ATTR_REUSE_FOLLOW_EVENT_DEPENDENCIES   CUmemPool_attribute = 1
+	CU_MEMPOOL_ATTR_REUSE_ALLOW_OPPORTUNISTIC         CUmemPool_attribute = 2
+	CU_MEMPOOL_ATTR_REUSE_ALLOW_INTERNAL_DEPENDENCIES CUmemPool_attribute = 3
+	CU_MEMPOOL_ATTR_RELEASE_THRESHOLD                 CUmemPool_attribute = 4
+	CU_MEMPOOL_ATTR_RESERVED_MEM_CURRENT              CUmemPool_attribute = 5
+	CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH                 CUmemPool_attribute = 6
+	CU_MEMPOOL_ATTR_USED_MEM_CURRENT                  CUmemPool_attribute = 7
+	CU_MEMPOOL_ATTR_USED_MEM_HIGH                     CUmemPool_attribute = 8
 )
 
 // CUdevice_attribute represents hardware properties queryable on CUdevice.

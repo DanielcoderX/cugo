@@ -89,3 +89,28 @@
 - **Consequences**:
   - Enables direct NVLink / PCIe P2P DMA transfers between distinct GPU contexts.
   - Returns clear errors on unsupported hardware links.
+
+## ADR-0011: Kernel Occupancy Calculation & Auto-Tuning
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Choosing optimal thread block sizes manually requires knowing GPU architecture limits, register pressure, and shared memory usage per kernel.
+- **Decision**: Bind `cuOccupancyMaxActiveBlocksPerMultiprocessor` and `cuOccupancyMaxPotentialBlockSize` to `Function.MaxActiveBlocksPerMultiprocessor` and `Function.SuggestBlockSize`.
+- **Consequences**:
+  - Applications can dynamically compute optimal block and grid dimensions on any user GPU at runtime.
+
+## ADR-0012: CUDA Graphs Stream Capture & Execution Replay
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Dispatching iterative sequences of small kernels and copies accumulates host CPU launch overhead (~10 µs per launch).
+- **Decision**: Wrap `cuStreamBeginCapture_v2`, `cuStreamEndCapture`, `cuGraphInstantiate_v2`, and `cuGraphLaunch` in `Stream` and `Graph` / `GraphExec` objects.
+- **Consequences**:
+  - Entire execution topologies can be captured once from Go and replayed with sub-microsecond latency.
+
+## ADR-0013: Stream-Ordered Memory Allocator & Memory Pools
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Traditional `cuMemAlloc` and `cuMemFree` synchronize the GPU context, introducing multi-microsecond stalls in stream pipelines.
+- **Decision**: Expose `Context.AllocAsync` and `Context.FreeAsync` backed by CUDA stream-ordered memory pools (`cuDeviceGetDefaultMemPool`, `cuMemPoolTrimTo`).
+- **Consequences**:
+  - Zero synchronization on allocation and deallocation; memory is reused immediately within the same stream.
+

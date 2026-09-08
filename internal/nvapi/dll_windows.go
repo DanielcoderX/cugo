@@ -40,8 +40,11 @@ var (
 	procMemFree         = nvcuda.NewProc("cuMemFree_v2")
 	procMemcpyHtoD      = nvcuda.NewProc("cuMemcpyHtoD_v2")
 	procMemcpyDtoH      = nvcuda.NewProc("cuMemcpyDtoH_v2")
-	procMemcpyHtoDAsync = nvcuda.NewProc("cuMemcpyHtoDAsync_v2")
-	procMemcpyDtoHAsync = nvcuda.NewProc("cuMemcpyDtoHAsync_v2")
+	procMemcpyHtoDAsync         = nvcuda.NewProc("cuMemcpyHtoDAsync_v2")
+	procMemcpyDtoHAsync         = nvcuda.NewProc("cuMemcpyDtoHAsync_v2")
+	procMemAllocHost            = nvcuda.NewProc("cuMemAllocHost_v2")
+	procMemFreeHost             = nvcuda.NewProc("cuMemFreeHost")
+	procMemHostGetDevicePointer = nvcuda.NewProc("cuMemHostGetDevicePointer_v2")
 
 	// Module & Kernel Launch
 	procModuleLoadData   = nvcuda.NewProc("cuModuleLoadData")
@@ -264,6 +267,37 @@ func CuMemcpyDtoHAsync(dstHost []byte, srcDevice CUdeviceptr, hStream CUstream) 
 		uintptr(srcDevice),
 		uintptr(len(dstHost)),
 		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemAllocHost allocates page-locked (pinned) host memory.
+func CuMemAllocHost(pp *unsafe.Pointer, bytesize uint64) error {
+	if err := procMemAllocHost.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemAllocHost_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemAllocHost.Call(uintptr(unsafe.Pointer(pp)), uintptr(bytesize))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemFreeHost frees page-locked host memory.
+func CuMemFreeHost(p unsafe.Pointer) error {
+	if err := procMemFreeHost.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemFreeHost: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemFreeHost.Call(uintptr(p))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemHostGetDevicePointer returns a device pointer corresponding to mapped pinned host memory.
+func CuMemHostGetDevicePointer(pdptr *CUdeviceptr, p unsafe.Pointer, flags uint32) error {
+	if err := procMemHostGetDevicePointer.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemHostGetDevicePointer_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemHostGetDevicePointer.Call(
+		uintptr(unsafe.Pointer(pdptr)),
+		uintptr(p),
+		uintptr(flags),
 	)
 	return ResultToError(CUresult(r))
 }

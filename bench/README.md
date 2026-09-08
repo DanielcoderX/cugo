@@ -11,12 +11,14 @@ Micro-benchmarks measuring raw Driver API dispatch overhead, kernel launch laten
 ## Results
 
 ```
-BenchmarkDriverCallOverhead-16     17293358        67.68 ns/op        16 B/op        2 allocs/op
-BenchmarkKernelLaunchLatency-16      117566      9861.00 ns/op       248 B/op       10 allocs/op
-BenchmarkMemcpyHtoD_1MB-16             8835     118175.00 ns/op     8873.05 MB/s
-BenchmarkMemcpyHtoD_16MB-16             788    1492516.00 ns/op    11240.89 MB/s
-BenchmarkMemcpyDtoH_1MB-16             6186     180604.00 ns/op     5805.93 MB/s
-BenchmarkMemcpyDtoH_16MB-16             676    1775373.00 ns/op     9449.96 MB/s
+BenchmarkDriverCallOverhead-16        17293358        67.68 ns/op        16 B/op        2 allocs/op
+BenchmarkKernelLaunchLatency-16         117566      9861.00 ns/op       248 B/op       10 allocs/op
+BenchmarkMemcpyHtoD_1MB-16                8835     118175.00 ns/op     8873.05 MB/s
+BenchmarkMemcpyHtoD_16MB-16                788    1492516.00 ns/op    11240.89 MB/s
+BenchmarkMemcpyDtoH_1MB-16                6186     180604.00 ns/op     5805.93 MB/s
+BenchmarkMemcpyDtoH_16MB-16                676    1775373.00 ns/op     9449.96 MB/s
+BenchmarkPinnedMemcpyHtoD_16MB-16          922    1290513.00 ns/op    13000.43 MB/s    (Pinned Host DMA)
+BenchmarkPinnedMemcpyDtoH_16MB-16          904    1313588.00 ns/op    12772.05 MB/s    (Pinned Host DMA)
 ```
 
 ## Analysis & CGO Comparison
@@ -25,6 +27,6 @@ BenchmarkMemcpyDtoH_16MB-16             676    1775373.00 ns/op     9449.96 MB/s
 2. **Kernel Launch Latency**:
    End-to-end `cuLaunchKernel` overhead (including typed parameter packing and validation) is **~9.8 µs**.
 3. **Memory Throughput**:
-   Memory transfers achieve PCIe Gen 4 bus saturation:
-   - **HtoD**: **11.24 GB/s** (16MB buffers)
-   - **DtoH**: **9.45 GB/s** (16MB buffers)
+   - **Pageable Memory**: ~11.24 GB/s (HtoD), ~9.45 GB/s (DtoH).
+   - **Pinned (Page-Locked) Host Memory**: **13.00 GB/s (HtoD)**, **12.77 GB/s (DtoH)** — full saturation of the PCIe 4.0 link.
+   - **Zero-Copy Access**: Direct access to host memory via `hMem.DevicePointer()` without memcpy transfers.

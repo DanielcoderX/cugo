@@ -17,6 +17,9 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuCtxGetCurrent` | Yes | `CurrentContext()` | Stable | Query current active context |
 | `cuMemAlloc_v2` | Yes | `Context.Alloc` | Stable | Linear device memory allocation |
 | `cuMemFree_v2` | Yes | `Context.Free` | Stable | Free device memory allocation |
+| `cuMemAllocHost_v2` | Yes | `Context.AllocHost` | Stable | Page-locked host memory allocation |
+| `cuMemFreeHost` | Yes | `HostMem.Free` | Stable | Free page-locked host memory |
+| `cuMemHostGetDevicePointer_v2` | Yes | `HostMem.DevicePointer` | Stable | Zero-copy GPU mapping of host memory |
 | `cuMemcpyHtoD_v2` | Yes | `Context.CopyHtoD` | Stable | Synchronous host to device copy |
 | `cuMemcpyDtoH_v2` | Yes | `Context.CopyDtoH` | Stable | Synchronous device to host copy |
 | `cuMemcpyHtoDAsync_v2`| Yes | `Stream.CopyHtoDAsync` | Stable | Asynchronous stream host to device copy |

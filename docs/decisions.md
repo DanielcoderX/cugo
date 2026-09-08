@@ -53,3 +53,12 @@
 - **Consequences**:
   - Anyone running `go build` or `go run` does not need `nvcc` installed.
   - Portable PTX is JIT-compiled by the installed NVIDIA driver at load time.
+
+## ADR-0007: Pinned Host Memory & Zero-Copy Access
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Standard Go memory allocated on the heap is pageable, limiting DMA copy throughput and preventing zero-copy GPU access.
+- **Decision**: Wrap `cuMemAllocHost_v2`, `cuMemFreeHost`, and `cuMemHostGetDevicePointer_v2` in `driver.HostMem`. Expose `HostMem.Bytes()` for idiomatic Go slice access and `HostMem.DevicePointer()` for direct zero-copy GPU kernel execution.
+- **Consequences**:
+  - DMA bandwidth increases to ~13 GB/s.
+  - Zero-copy execution allows GPU kernels to read and write directly to mapped host memory without separate `CopyHtoD` / `CopyDtoH` memcpy calls.

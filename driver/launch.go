@@ -136,6 +136,8 @@ func toKernelArg(v any) (KernelArg, error) {
 			return nil, err
 		}
 		return Ptr(dptr), nil
+	case *ManagedMem:
+		return Ptr(val.DevicePtr()), nil
 	case bool:
 		return Bool(val), nil
 	case int8:
@@ -185,6 +187,9 @@ func (f *Function) Launch(cfg LaunchConfig, args ...any) error {
 		return errors.New("cugo: nil or uninitialized Function")
 	}
 
+	if err := f.mod.ctx.EnsureCurrent(); err != nil {
+		return err
+	}
 	f.mod.mu.Lock()
 	unloaded := f.mod.unloaded
 	f.mod.mu.Unlock()

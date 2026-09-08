@@ -45,6 +45,9 @@ var (
 	procMemAllocHost            = nvcuda.NewProc("cuMemAllocHost_v2")
 	procMemFreeHost             = nvcuda.NewProc("cuMemFreeHost")
 	procMemHostGetDevicePointer = nvcuda.NewProc("cuMemHostGetDevicePointer_v2")
+	procMemAllocManaged         = nvcuda.NewProc("cuMemAllocManaged")
+	procMemPrefetchAsync        = nvcuda.NewProc("cuMemPrefetchAsync")
+	procMemAdvise               = nvcuda.NewProc("cuMemAdvise")
 
 	// Module & Kernel Launch
 	procModuleLoadData   = nvcuda.NewProc("cuModuleLoadData")
@@ -298,6 +301,47 @@ func CuMemHostGetDevicePointer(pdptr *CUdeviceptr, p unsafe.Pointer, flags uint3
 		uintptr(unsafe.Pointer(pdptr)),
 		uintptr(p),
 		uintptr(flags),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemAllocManaged allocates memory managed automatically by Unified Memory.
+func CuMemAllocManaged(dptr *CUdeviceptr, bytesize uint64, flags uint32) error {
+	if err := procMemAllocManaged.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemAllocManaged: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemAllocManaged.Call(
+		uintptr(unsafe.Pointer(dptr)),
+		uintptr(bytesize),
+		uintptr(flags),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemPrefetchAsync prefetches unified memory to the destination device or CPU.
+func CuMemPrefetchAsync(devPtr CUdeviceptr, count uint64, dstDevice CUdevice, hStream CUstream) error {
+	if err := procMemPrefetchAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemPrefetchAsync: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemPrefetchAsync.Call(
+		uintptr(devPtr),
+		uintptr(count),
+		uintptr(dstDevice),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemAdvise advises the Unified Memory subsystem about usage patterns for memory ranges.
+func CuMemAdvise(devPtr CUdeviceptr, count uint64, advice CUmem_advise, device CUdevice) error {
+	if err := procMemAdvise.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemAdvise: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemAdvise.Call(
+		uintptr(devPtr),
+		uintptr(count),
+		uintptr(advice),
+		uintptr(device),
 	)
 	return ResultToError(CUresult(r))
 }

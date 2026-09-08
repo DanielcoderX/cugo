@@ -60,10 +60,12 @@ func (c *Context) Destroy() error {
 		return ErrContextDestroyed
 	}
 	c.closed = true
-	if err := nvapi.CuCtxDestroy(c.handle); err != nil {
+	h := c.handle
+	c.handle = 0
+	if err := nvapi.CuCtxDestroy(h); err != nil {
 		return fmt.Errorf("cugo: cuCtxDestroy: %w", err)
 	}
-	c.handle = 0
+	_ = nvapi.CuCtxSetCurrent(0)
 	return nil
 }
 
@@ -89,14 +91,8 @@ func (c *Context) EnsureCurrent() error {
 	if c.closed {
 		return ErrContextDestroyed
 	}
-	var cur nvapi.CUcontext
-	if err := nvapi.CuCtxGetCurrent(&cur); err != nil {
-		return fmt.Errorf("cugo: cuCtxGetCurrent: %w", err)
-	}
-	if cur != c.handle {
-		if err := nvapi.CuCtxSetCurrent(c.handle); err != nil {
-			return fmt.Errorf("cugo: cuCtxSetCurrent: %w", err)
-		}
+	if err := nvapi.CuCtxSetCurrent(c.handle); err != nil {
+		return fmt.Errorf("cugo: cuCtxSetCurrent: %w", err)
 	}
 	return nil
 }

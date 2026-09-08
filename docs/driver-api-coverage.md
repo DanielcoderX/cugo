@@ -20,6 +20,9 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuMemAllocHost_v2` | Yes | `Context.AllocHost` | Stable | Page-locked host memory allocation |
 | `cuMemFreeHost` | Yes | `HostMem.Free` | Stable | Free page-locked host memory |
 | `cuMemHostGetDevicePointer_v2` | Yes | `HostMem.DevicePointer` | Stable | Zero-copy GPU mapping of host memory |
+| `cuMemAllocManaged` | Yes | `Context.AllocManaged` | Stable | Unified Memory allocation (CPU + GPU shared) |
+| `cuMemPrefetchAsync` | Yes | `ManagedMem.PrefetchToDevice`, `ManagedMem.PrefetchToCPU` | Stable | Asynchronous page prefetching |
+| `cuMemAdvise` | Yes | `ManagedMem.Advise` | Stable | Unified Memory usage hints & advice |
 | `cuMemcpyHtoD_v2` | Yes | `Context.CopyHtoD` | Stable | Synchronous host to device copy |
 | `cuMemcpyDtoH_v2` | Yes | `Context.CopyDtoH` | Stable | Synchronous device to host copy |
 | `cuMemcpyHtoDAsync_v2`| Yes | `Stream.CopyHtoDAsync` | Stable | Asynchronous stream host to device copy |

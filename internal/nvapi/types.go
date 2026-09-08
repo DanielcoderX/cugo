@@ -11,6 +11,28 @@ type CUfunction uintptr
 type CUstream uintptr
 type CUevent uintptr
 
+// CU_DEVICE_CPU indicates CPU device target for prefetching.
+const CU_DEVICE_CPU CUdevice = -1
+
+// Unified Memory Attach flags.
+const (
+	CU_MEM_ATTACH_GLOBAL uint32 = 0x1
+	CU_MEM_ATTACH_HOST   uint32 = 0x2
+	CU_MEM_ATTACH_SINGLE uint32 = 0x4
+)
+
+// CUmem_advise represents memory advising hints for Unified Memory.
+type CUmem_advise int32
+
+const (
+	CU_MEM_ADVISE_SET_READ_MOSTLY          CUmem_advise = 1
+	CU_MEM_ADVISE_UNSET_READ_MOSTLY        CUmem_advise = 2
+	CU_MEM_ADVISE_SET_PREFERRED_LOCATION   CUmem_advise = 3
+	CU_MEM_ADVISE_UNSET_PREFERRED_LOCATION CUmem_advise = 4
+	CU_MEM_ADVISE_SET_ACCESSED_BY          CUmem_advise = 5
+	CU_MEM_ADVISE_UNSET_ACCESSED_BY        CUmem_advise = 6
+)
+
 // CUdevice_attribute represents hardware properties queryable on CUdevice.
 type CUdevice_attribute int32
 

@@ -36,11 +36,8 @@ func (c *Context) LoadModuleData(ptxOrCubin []byte) (*Module, error) {
 		return nil, errors.New("cugo: cannot load empty module data")
 	}
 
-	c.mu.Lock()
-	closed := c.closed
-	c.mu.Unlock()
-	if closed {
-		return nil, ErrContextDestroyed
+	if err := c.EnsureCurrent(); err != nil {
+		return nil, err
 	}
 
 	// Ensure null-termination for PTX string if not already present
@@ -83,6 +80,9 @@ func (m *Module) Function(name string) (*Function, error) {
 
 // Unload unloads the module from the GPU context.
 func (m *Module) Unload() error {
+	if err := m.ctx.EnsureCurrent(); err != nil {
+		return err
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

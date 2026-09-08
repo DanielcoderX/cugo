@@ -71,3 +71,12 @@
 - **Consequences**:
   - Full transparency for developers passing custom Go structs directly to `fn.Launch(cfg, myStruct)` matching CUDA C `__global__ void myKernel(MyStruct s)`.
   - Zero manual packing code required for complex kernel parameter lists.
+
+## ADR-0009: Unified Memory (Managed Memory) & Asynchronous Prefetching
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Programs handling complex data structures benefit from a single coherent virtual memory space shared across CPU and GPU, eliminating explicit memcpy calls.
+- **Decision**: Wrap `cuMemAllocManaged`, `cuMemPrefetchAsync`, and `cuMemAdvise` in `driver.ManagedMem`. Expose `Bytes()` for direct Go CPU slices, `DevicePtr()` for kernel arguments, and prefetch methods for minimizing page fault stalls.
+- **Consequences**:
+  - Developers can allocate shared CPU-GPU memory with a single call to `ctx.AllocManaged()`.
+  - Hardware MMU migrates pages on demand; `PrefetchToDevice` and `PrefetchToCPU` enable deterministic page migration ahead of time.

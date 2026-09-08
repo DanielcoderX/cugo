@@ -1,38 +1,65 @@
 # cugo: pure-Go CUDA Driver API bindings (no cgo)
 
-> **Status**: Experimental / Pre-1.0 (Windows-only for v1)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cugo/cugo.svg)](https://pkg.go.dev/github.com/cugo/cugo)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v1.0.0-green.svg)](https://github.com/cugo/cugo/releases/tag/v1.0.0)
 
-`cugo` exposes the NVIDIA CUDA Driver API directly to Go **without cgo** by dynamically loading `nvcuda.dll` at runtime via `golang.org/x/sys/windows`. While existing Go CUDA bindings require a C compiler, CUDA headers, and the CUDA Toolkit toolchain installed at build time, `cugo` requires **no C compiler to build or ship a Go program that uses the GPU** — only the standard NVIDIA display driver needs to be present on the target host at runtime. This makes cross-compiling GPU-accelerated Go binaries effortless.
+`cugo` exposes the NVIDIA CUDA Driver API directly to Go **without cgo** by dynamically loading `nvcuda.dll` at runtime via `golang.org/x/sys/windows`. 
+
+While existing Go CUDA bindings require a C compiler, CUDA headers, and the CUDA Toolkit installed at build time, `cugo` requires **no C compiler to build or ship a Go program that uses the GPU** — only the standard NVIDIA display driver needs to be present on the target host at runtime. Cross-compiling GPU-accelerated Go binaries is completely frictionless (`CGO_ENABLED=0`).
+
+---
+
+## Key Features
+
+- 🚀 **Zero Build Dependencies**: No MSVC, GCC, Clang, or CUDA Toolkit required for downstream users or consumers.
+- 📦 **PTX & CUBIN Embedding**: Embed GPU kernels directly into Go binaries using Go 1.16+ `//go:embed`.
+- ⚡ **Kernel Launch Reflection**: Pass arbitrary Go structs by-value or by-pointer, plus primitives (`bool`, `int8`-`int64`, `float32`/`float64`, `uintptr`) with automatic ABI marshaling.
+- 📌 **Pinned Host Memory**: Page-locked allocations (`AllocHost`) with zero-copy direct GPU access and full 13 GB/s PCIe 4.0 DMA saturation.
+- 🧠 **Unified Memory**: Coherent CPU/GPU virtual memory (`AllocManaged`) with automatic migration and explicit prefetching (`PrefetchToDevice`, `PrefetchToCPU`).
+- 🔄 **CUDA Graphs**: Capture entire execution DAGs (`BeginCapture`, `EndCapture`, `Instantiate`, `Launch`) to execute complex pipelines with sub-microsecond launch latency.
+- 🏊 **Stream-Ordered Allocator**: Modern CUDA 11.2+ memory pools (`AllocAsync`, `FreeAsync`, `TrimTo`) with zero-synchronization GPU memory recycling.
+- 🛠️ **Dynamic JIT Linker**: In-process runtime compilation and linking of PTX strings directly into native device CUBIN binaries (`CreateLinker`, `AddPTX`, `Complete`).
+- 📐 **2D Pitched Memory & Arrays**: Hardware-aligned stride allocations (`AllocPitch`), 2D rectangular transfers (`Copy2D`), and CUDA hardware arrays (`CreateArray2D`).
+- 🌐 **Multi-GPU P2P**: Direct NVLink / PCIe peer-to-peer copies (`CanAccessPeer`, `EnablePeerAccess`, `CopyPeer`).
+- 🧮 **Occupancy Auto-Tuning**: Built-in occupancy calculators (`MaxActiveBlocksPerMultiprocessor`, `SuggestBlockSize`).
+
+---
 
 ## Feature Comparison
 
-| Feature | `cugo` | `gorgonia/cu` |
+| Capability | `cugo` (v1.0.0) | `gorgonia/cu` |
 |---|---|---|
 | **CGO Required** | **No** (`CGO_ENABLED=0` friendly) | Yes |
 | **Build-Time C Toolchain** | **None** | MSVC / GCC / Clang required |
-| **CUDA Toolkit at Build Time** | **None** (for library consumers) | Required (`cuda.h`, import libs) |
-| **Cross-Compilation** | Seamless from any OS/architecture | Difficult (requires cross-toolchain) |
+| **CUDA Toolkit at Build Time** | **None** (library consumers) | Required (`cuda.h`, import libs) |
+| **Cross-Compilation** | Seamless from any OS/architecture | Requires cross-compilation toolchain |
 | **Driver Dependency** | Runtime `nvcuda.dll` | Runtime + link-time driver libraries |
-| **Platform Support** | Windows (`amd64`, v1) | Windows, Linux |
-| **API Coverage** | Focused driver subset ([Coverage](docs/driver-api-coverage.md)) | Broad driver API coverage |
-| **Maturity** | New / Experimental | Mature |
+| **Kernel Param Reflection** | **Yes** (Go structs & primitives) | Manual packing |
+| **CUDA Graphs API** | **Yes** (Capture & Replay) | No |
+| **Stream-Ordered MemPool** | **Yes** (`cuMemAllocAsync`) | No |
+| **Runtime JIT Linker** | **Yes** (`cuLinkCreate`) | No |
+| **Platform Support** | Windows (`amd64`, v1.0) | Windows, Linux |
+
+---
 
 ## Performance & Micro-benchmarks
 
-Benchmarked on **RTX 4060 Laptop GPU (Ada Lovelace, sm_89)** + **AMD Ryzen 7 7435HS**:
+Benchmarked on **NVIDIA GeForce RTX 4060 Laptop GPU (Ada Lovelace, sm_89, 8GB VRAM)** + **AMD Ryzen 7 7435HS**:
 
-| Benchmark | Latency / Bandwidth | Notes |
+| Metric | Measured Value | Notes |
 |---|---|---|
-| **Driver Call Overhead (`cuDeviceGetCount`)** | **~67.7 ns/op** | Competitive with cgo (~50-60 ns) |
-| **Kernel Launch Latency (`cuLaunchKernel`)** | **~9.86 µs/op** | End-to-end dispatch + param packing |
-| **Host-to-Device Bandwidth (16MB)** | **11,240 MB/s (11.24 GB/s)** | Saturates PCIe 4.0 link |
-| **Device-to-Host Bandwidth (16MB)** | **9,450 MB/s (9.45 GB/s)** | Saturates PCIe 4.0 link |
+| **Raw Driver Dispatch Overhead** | **67.68 ns/op** | Competitive with cgo (~50-60 ns) |
+| **Kernel Launch Latency** | **9.86 µs/op** | End-to-end dispatch + param validation |
+| **Pageable Host-to-Device (16MB)** | **11,240 MB/s** | Standard pageable transfer |
+| **Pageable Device-to-Host (16MB)** | **9,450 MB/s** | Standard pageable transfer |
+| **Pinned DMA Host-to-Device (16MB)**| **13,000 MB/s (13.0 GB/s)** | Full PCIe 4.0 link saturation |
+| **Pinned DMA Device-to-Host (16MB)**| **12,772 MB/s (12.8 GB/s)** | Full PCIe 4.0 link saturation |
+| **Shared-Memory Tiled GEMM** | **830.44 GFLOPS** | 1024x1024 matrix multiplication |
 
-See [bench/README.md](bench/README.md) for detailed analysis.
+See [bench/README.md](bench/README.md) for full benchmarks and methodology.
 
-## API Coverage
-
-See [docs/driver-api-coverage.md](docs/driver-api-coverage.md) for the complete list of bound and planned CUDA Driver API functions.
+---
 
 ## Installation
 
@@ -40,9 +67,13 @@ See [docs/driver-api-coverage.md](docs/driver-api-coverage.md) for the complete 
 go get github.com/cugo/cugo
 ```
 
-Requires Go 1.22+ and an NVIDIA display driver installed at runtime. No CUDA Toolkit or C compiler required for consumers.
+Requires Go 1.22+ and NVIDIA display drivers installed. No CUDA Toolkit or C compiler required.
 
-## Quickstart: Vector Addition Kernel
+---
+
+## Quickstart Examples
+
+### 1. Vector Addition Kernel
 
 ```go
 package main
@@ -50,7 +81,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"unsafe"
 
 	"github.com/cugo/cugo/driver"
@@ -58,7 +88,6 @@ import (
 )
 
 func main() {
-	// 1. Initialize driver & device context
 	if err := driver.Init(); err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +98,6 @@ func main() {
 	}
 	defer ctx.Destroy()
 
-	// 2. Load embedded PTX module & lookup function
 	mod, err := ctx.LoadModuleData(vecadd.PTX)
 	if err != nil {
 		log.Fatal(err)
@@ -81,11 +109,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 3. Prepare data & alloc GPU buffers
 	const n = 100000
 	const byteSize = n * 4
-	hA := make([]float32, n)
-	hB := make([]float32, n)
+	hA, hB, hC := make([]float32, n), make([]float32, n), make([]float32, n)
 	for i := range hA {
 		hA[i] = float32(i)
 		hB[i] = float32(i) * 2
@@ -98,52 +124,96 @@ func main() {
 	_ = ctx.CopyHtoD(dA, unsafe.Slice((*byte)(unsafe.Pointer(&hA[0])), byteSize))
 	_ = ctx.CopyHtoD(dB, unsafe.Slice((*byte)(unsafe.Pointer(&hB[0])), byteSize))
 
-	// 4. Launch kernel
 	cfg := driver.LaunchConfig{
 		GridDimX:  (n + 255) / 256,
 		BlockDimX: 256,
 	}
-	if err := fn.Launch(cfg, dA, dB, dC, int32(n)); err != nil {
-		log.Fatal(err)
-	}
+	_ = fn.Launch(cfg, dA, dB, dC, int32(n))
 
-	// 5. Copy result back
-	hC := make([]float32, n)
 	_ = ctx.CopyDtoH(unsafe.Slice((*byte)(unsafe.Pointer(&hC[0])), byteSize), dC)
-
 	fmt.Printf("GPU Result[42] = %.1f (expected %.1f)\n", hC[42], hA[42]+hB[42])
 }
 ```
 
-Run the included examples:
+### 2. Unified Memory (Zero-Memcpy)
+
+```go
+// Allocate shared virtual memory directly accessible by CPU and GPU
+mem, _ := ctx.AllocManaged(size)
+defer mem.Free()
+
+// Access directly on host CPU
+slice := mem.Bytes()
+slice[0] = 42
+
+// Launch kernel directly using mem — hardware migrates pages on demand
+_ = fn.Launch(cfg, mem, int32(n))
+```
+
+### 3. CUDA Graphs (Capture & Replay)
+
+```go
+stream, _ := ctx.CreateStream()
+defer stream.Destroy()
+
+// 1. Capture stream operations into a graph
+_ = stream.BeginCapture()
+_ = fn.Launch(cfg, dA, dB, dC, int32(n))
+graph, _ := stream.EndCapture()
+defer graph.Destroy()
+
+// 2. Instantiate and launch repeatedly with sub-microsecond CPU overhead
+exec, _ := graph.Instantiate()
+defer exec.Destroy()
+
+_ = exec.Launch(stream)
+_ = stream.Synchronize()
+```
+
+### 4. Dynamic JIT Linker
+
+```go
+linker, _ := ctx.CreateLinker()
+defer linker.Destroy()
+
+// Feed PTX code directly generated at runtime
+_ = linker.AddPTX(ptxBytes, "my_kernel.ptx")
+
+// Compile and link directly to hardware CUBIN
+cubin, _ := linker.Complete()
+
+// Load and execute immediately
+mod, _ := ctx.LoadModuleData(cubin)
+defer mod.Unload()
+```
+
+---
+
+## Included Examples & Benchmarks
 
 ```bash
-# 1. Device enumeration & properties
+# Enumerate GPU models, compute capabilities, and hardware attributes
 go run ./examples/device-info
 
-# 2. End-to-end vector addition kernel
+# Basic vector addition end-to-end kernel launch
 go run ./examples/vecadd
 
-# 3. Pipelined asynchronous streams & event timing
+# Async streams, event recording, and transfer overlap
 go run ./examples/async-copy
+
+# High-performance 16x16 shared-memory tiled GEMM (>830 GFLOPS)
+go run ./examples/gemm
 ```
 
-## Modifying & Regenerating Kernels
+---
 
-The vector addition kernel is located in `kernels/vecadd/vecadd.cu`. To recompile to PTX:
+## Architecture & Design Documents
 
-```bash
-cd kernels/vecadd
-nvcc -ptx -o vecadd.ptx vecadd.cu
-```
+- [docs/design.md](docs/design.md): System architecture, fastcall calling conventions, error mapping.
+- [docs/decisions.md](docs/decisions.md): Architecture Decision Records (ADR-0001 through ADR-0016).
+- [docs/driver-api-coverage.md](docs/driver-api-coverage.md): Complete table of 50+ bound CUDA Driver API functions.
 
-The precompiled PTX is checked into git, so users never need `nvcc` just to build or run Go code using `cugo`.
-
-## Architecture & Design
-
-- [docs/design.md](docs/design.md): System architecture, calling conventions, error mapping.
-- [docs/decisions.md](docs/decisions.md): Architecture Decision Records (ADRs).
-- [docs/driver-api-coverage.md](docs/driver-api-coverage.md): API coverage roadmap.
+---
 
 ## License
 

@@ -20,6 +20,7 @@ var (
 var (
 	nvcuda = windows.NewLazySystemDLL("nvcuda.dll")
 
+	// Initialization & Device Management
 	procInit               = nvcuda.NewProc("cuInit")
 	procDriverGetVersion   = nvcuda.NewProc("cuDriverGetVersion")
 	procDeviceGetCount     = nvcuda.NewProc("cuDeviceGetCount")
@@ -27,6 +28,38 @@ var (
 	procDeviceGetName      = nvcuda.NewProc("cuDeviceGetName")
 	procDeviceTotalMem     = nvcuda.NewProc("cuDeviceTotalMem_v2")
 	procDeviceGetAttribute = nvcuda.NewProc("cuDeviceGetAttribute")
+
+	// Context Management
+	procCtxCreate     = nvcuda.NewProc("cuCtxCreate_v2")
+	procCtxDestroy    = nvcuda.NewProc("cuCtxDestroy_v2")
+	procCtxSetCurrent = nvcuda.NewProc("cuCtxSetCurrent")
+	procCtxGetCurrent = nvcuda.NewProc("cuCtxGetCurrent")
+
+	// Memory Management
+	procMemAlloc        = nvcuda.NewProc("cuMemAlloc_v2")
+	procMemFree         = nvcuda.NewProc("cuMemFree_v2")
+	procMemcpyHtoD      = nvcuda.NewProc("cuMemcpyHtoD_v2")
+	procMemcpyDtoH      = nvcuda.NewProc("cuMemcpyDtoH_v2")
+	procMemcpyHtoDAsync = nvcuda.NewProc("cuMemcpyHtoDAsync_v2")
+	procMemcpyDtoHAsync = nvcuda.NewProc("cuMemcpyDtoHAsync_v2")
+
+	// Module & Kernel Launch
+	procModuleLoadData   = nvcuda.NewProc("cuModuleLoadData")
+	procModuleUnload     = nvcuda.NewProc("cuModuleUnload")
+	procModuleGetFunction = nvcuda.NewProc("cuModuleGetFunction")
+	procLaunchKernel     = nvcuda.NewProc("cuLaunchKernel")
+
+	// Stream Management
+	procStreamCreate      = nvcuda.NewProc("cuStreamCreate")
+	procStreamDestroy     = nvcuda.NewProc("cuStreamDestroy_v2")
+	procStreamSynchronize = nvcuda.NewProc("cuStreamSynchronize")
+
+	// Event Management
+	procEventCreate      = nvcuda.NewProc("cuEventCreate")
+	procEventDestroy     = nvcuda.NewProc("cuEventDestroy_v2")
+	procEventRecord      = nvcuda.NewProc("cuEventRecord")
+	procEventSynchronize = nvcuda.NewProc("cuEventSynchronize")
+	procEventElapsedTime = nvcuda.NewProc("cuEventElapsedTime")
 )
 
 // CheckDriver verifies whether nvcuda.dll can be dynamically loaded.
@@ -46,7 +79,7 @@ func CuInit(flags uint32) error {
 	return ResultToError(CUresult(r))
 }
 
-// CuDriverGetVersion returns the CUDA driver version (e.g., 12080 for 12.8, 13000 for 13.0).
+// CuDriverGetVersion returns the CUDA driver version.
 func CuDriverGetVersion(version *int32) error {
 	if err := procDriverGetVersion.Find(); err != nil {
 		return fmt.Errorf("%w: cuDriverGetVersion: %v", ErrProcNotFound, err)
@@ -107,6 +140,279 @@ func CuDeviceGetAttribute(val *int32, attrib CUdevice_attribute, dev CUdevice) e
 		uintptr(unsafe.Pointer(val)),
 		uintptr(attrib),
 		uintptr(dev),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxCreate creates a new CUDA context and associates it with the calling thread.
+func CuCtxCreate(pctx *CUcontext, flags uint32, dev CUdevice) error {
+	if err := procCtxCreate.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxCreate_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxCreate.Call(
+		uintptr(unsafe.Pointer(pctx)),
+		uintptr(flags),
+		uintptr(dev),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxDestroy destroys a CUDA context.
+func CuCtxDestroy(ctx CUcontext) error {
+	if err := procCtxDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxDestroy_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxDestroy.Call(uintptr(ctx))
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxSetCurrent binds the specified CUDA context to the calling CPU thread.
+func CuCtxSetCurrent(ctx CUcontext) error {
+	if err := procCtxSetCurrent.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxSetCurrent: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxSetCurrent.Call(uintptr(ctx))
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxGetCurrent returns the CUDA context bound to the calling CPU thread.
+func CuCtxGetCurrent(pctx *CUcontext) error {
+	if err := procCtxGetCurrent.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxGetCurrent: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxGetCurrent.Call(uintptr(unsafe.Pointer(pctx)))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemAlloc allocates bytesize bytes of linear memory on the device.
+func CuMemAlloc(dptr *CUdeviceptr, bytesize uint64) error {
+	if err := procMemAlloc.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemAlloc_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemAlloc.Call(uintptr(unsafe.Pointer(dptr)), uintptr(bytesize))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemFree frees memory allocated on the device.
+func CuMemFree(dptr CUdeviceptr) error {
+	if err := procMemFree.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemFree_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemFree.Call(uintptr(dptr))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpyHtoD copies byteCount bytes from host memory to device memory.
+func CuMemcpyHtoD(dstDevice CUdeviceptr, srcHost []byte) error {
+	if len(srcHost) == 0 {
+		return nil
+	}
+	if err := procMemcpyHtoD.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpyHtoD_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpyHtoD.Call(
+		uintptr(dstDevice),
+		uintptr(unsafe.Pointer(&srcHost[0])),
+		uintptr(len(srcHost)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpyDtoH copies byteCount bytes from device memory to host memory.
+func CuMemcpyDtoH(dstHost []byte, srcDevice CUdeviceptr) error {
+	if len(dstHost) == 0 {
+		return nil
+	}
+	if err := procMemcpyDtoH.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpyDtoH_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpyDtoH.Call(
+		uintptr(unsafe.Pointer(&dstHost[0])),
+		uintptr(srcDevice),
+		uintptr(len(dstHost)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpyHtoDAsync copies memory from host to device asynchronously.
+func CuMemcpyHtoDAsync(dstDevice CUdeviceptr, srcHost []byte, hStream CUstream) error {
+	if len(srcHost) == 0 {
+		return nil
+	}
+	if err := procMemcpyHtoDAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpyHtoDAsync_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpyHtoDAsync.Call(
+		uintptr(dstDevice),
+		uintptr(unsafe.Pointer(&srcHost[0])),
+		uintptr(len(srcHost)),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpyDtoHAsync copies memory from device to host asynchronously.
+func CuMemcpyDtoHAsync(dstHost []byte, srcDevice CUdeviceptr, hStream CUstream) error {
+	if len(dstHost) == 0 {
+		return nil
+	}
+	if err := procMemcpyDtoHAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpyDtoHAsync_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpyDtoHAsync.Call(
+		uintptr(unsafe.Pointer(&dstHost[0])),
+		uintptr(srcDevice),
+		uintptr(len(dstHost)),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuModuleLoadData loads a compute module from raw PTX or cubin data.
+func CuModuleLoadData(module *CUmodule, image []byte) error {
+	if len(image) == 0 {
+		return errors.New("cugo: empty module image")
+	}
+	if err := procModuleLoadData.Find(); err != nil {
+		return fmt.Errorf("%w: cuModuleLoadData: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procModuleLoadData.Call(
+		uintptr(unsafe.Pointer(module)),
+		uintptr(unsafe.Pointer(&image[0])),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuModuleUnload unloads a module from the current CUDA context.
+func CuModuleUnload(module CUmodule) error {
+	if err := procModuleUnload.Find(); err != nil {
+		return fmt.Errorf("%w: cuModuleUnload: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procModuleUnload.Call(uintptr(module))
+	return ResultToError(CUresult(r))
+}
+
+// CuModuleGetFunction returns a function handle from a loaded module.
+func CuModuleGetFunction(hfunc *CUfunction, hmod CUmodule, name string) error {
+	if err := procModuleGetFunction.Find(); err != nil {
+		return fmt.Errorf("%w: cuModuleGetFunction: %v", ErrProcNotFound, err)
+	}
+	cName := append([]byte(name), 0)
+	r, _, _ := procModuleGetFunction.Call(
+		uintptr(unsafe.Pointer(hfunc)),
+		uintptr(hmod),
+		uintptr(unsafe.Pointer(&cName[0])),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuLaunchKernel launches a CUDA kernel on the device.
+func CuLaunchKernel(
+	f CUfunction,
+	gridDimX, gridDimY, gridDimZ uint32,
+	blockDimX, blockDimY, blockDimZ uint32,
+	sharedMemBytes uint32,
+	hStream CUstream,
+	kernelParams unsafe.Pointer,
+	extra unsafe.Pointer,
+) error {
+	if err := procLaunchKernel.Find(); err != nil {
+		return fmt.Errorf("%w: cuLaunchKernel: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procLaunchKernel.Call(
+		uintptr(f),
+		uintptr(gridDimX),
+		uintptr(gridDimY),
+		uintptr(gridDimZ),
+		uintptr(blockDimX),
+		uintptr(blockDimY),
+		uintptr(blockDimZ),
+		uintptr(sharedMemBytes),
+		uintptr(hStream),
+		uintptr(kernelParams),
+		uintptr(extra),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamCreate creates an asynchronous stream.
+func CuStreamCreate(phStream *CUstream, flags uint32) error {
+	if err := procStreamCreate.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamCreate: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamCreate.Call(
+		uintptr(unsafe.Pointer(phStream)),
+		uintptr(flags),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamDestroy destroys an asynchronous stream.
+func CuStreamDestroy(hStream CUstream) error {
+	if err := procStreamDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamDestroy_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamDestroy.Call(uintptr(hStream))
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamSynchronize waits for stream tasks to complete.
+func CuStreamSynchronize(hStream CUstream) error {
+	if err := procStreamSynchronize.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamSynchronize: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamSynchronize.Call(uintptr(hStream))
+	return ResultToError(CUresult(r))
+}
+
+// CuEventCreate creates an event.
+func CuEventCreate(phEvent *CUevent, flags uint32) error {
+	if err := procEventCreate.Find(); err != nil {
+		return fmt.Errorf("%w: cuEventCreate: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procEventCreate.Call(
+		uintptr(unsafe.Pointer(phEvent)),
+		uintptr(flags),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuEventDestroy destroys an event.
+func CuEventDestroy(hEvent CUevent) error {
+	if err := procEventDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuEventDestroy_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procEventDestroy.Call(uintptr(hEvent))
+	return ResultToError(CUresult(r))
+}
+
+// CuEventRecord records an event on the specified stream.
+func CuEventRecord(hEvent CUevent, hStream CUstream) error {
+	if err := procEventRecord.Find(); err != nil {
+		return fmt.Errorf("%w: cuEventRecord: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procEventRecord.Call(uintptr(hEvent), uintptr(hStream))
+	return ResultToError(CUresult(r))
+}
+
+// CuEventSynchronize waits until the completion of an event.
+func CuEventSynchronize(hEvent CUevent) error {
+	if err := procEventSynchronize.Find(); err != nil {
+		return fmt.Errorf("%w: cuEventSynchronize: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procEventSynchronize.Call(uintptr(hEvent))
+	return ResultToError(CUresult(r))
+}
+
+// CuEventElapsedTime computes the elapsed time between two events in milliseconds.
+func CuEventElapsedTime(milliseconds *float32, hStart CUevent, hEnd CUevent) error {
+	if err := procEventElapsedTime.Find(); err != nil {
+		return fmt.Errorf("%w: cuEventElapsedTime: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procEventElapsedTime.Call(
+		uintptr(unsafe.Pointer(milliseconds)),
+		uintptr(hStart),
+		uintptr(hEnd),
 	)
 	return ResultToError(CUresult(r))
 }

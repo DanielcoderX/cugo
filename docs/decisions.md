@@ -26,3 +26,30 @@
 - **Decision**: Map internal procedures directly to the standard `_v2` symbols present across all modern 64-bit drivers.
 - **Consequences**:
   - Prevents subtle pointer width and 64-bit address space bugs.
+
+## ADR-0004: Go Goroutine Thread-Affinity & Context Binding
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: In the CUDA Driver API, `CUcontext` is bound per OS host thread. Go's runtime scheduler can migrate goroutines across OS threads at any yield point.
+- **Decision**: Implement `Context.EnsureCurrent()` which queries the thread's current context (`cuCtxGetCurrent`) and only sets current (`cuCtxSetCurrent`) if the calling OS thread is not already bound to this context. Call `EnsureCurrent()` across all context-dependent methods (`Alloc`, `Free`, `CopyHtoD`, `CopyDtoH`, `CreateStream`, `CreateEvent`, `LoadModuleData`).
+- **Consequences**:
+  - Transparent context affinity across goroutine migrations without requiring callers to manually call `runtime.LockOSThread()` for ordinary operations.
+  - Benchmarks and intensive loops can still pin threads for minimal overhead.
+
+## ADR-0005: Kernel Parameter Marshaling via Typed KernelArg & void** Array
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: `cuLaunchKernel` requires a `void** kernelParams` array where each element points to the memory buffer of the argument.
+- **Decision**: Define a typed `KernelArg` interface (`Ptr`, `Int32`, `Uint32`, `Int64`, `Uint64`, `Float32`, `Float64`, `Raw`) alongside an automatic type switch for primitive types. Pack argument addresses into a slice of `unsafe.Pointer` and guard with `runtime.KeepAlive`.
+- **Consequences**:
+  - Safe, predictable ABI argument packing without heavy runtime reflection overhead.
+  - Avoids GC pointer corruption while retaining an idiomatic Go API.
+
+## ADR-0006: Precompiled PTX Embedding
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: cugo is a driver API binding, not a CUDA C compiler. Users and consumers of downstream libraries need to build without `nvcc`.
+- **Decision**: Kernels are authored in `.cu`, compiled offline or via `go:generate nvcc -ptx` to `.ptx`, and embedded via Go's `//go:embed`.
+- **Consequences**:
+  - Anyone running `go build` or `go run` does not need `nvcc` installed.
+  - Portable PTX is JIT-compiled by the installed NVIDIA driver at load time.

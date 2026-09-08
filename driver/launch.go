@@ -1,4 +1,4 @@
-//go:build windows
+//go:build windows || linux
 
 package driver
 
@@ -138,6 +138,10 @@ func toKernelArg(v any) (KernelArg, error) {
 		return Ptr(dptr), nil
 	case *ManagedMem:
 		return Ptr(val.DevicePtr()), nil
+	case *TextureObject:
+		return Uint64(val.Handle()), nil
+	case *SurfaceObject:
+		return Uint64(val.Handle()), nil
 	case bool:
 		return Bool(val), nil
 	case int8:

@@ -1,4 +1,4 @@
-//go:build windows
+//go:build windows || linux
 
 package nvapi
 
@@ -17,6 +17,8 @@ type CUgraphExec uintptr
 type CUmemoryPool uintptr
 type CUlinkState uintptr
 type CUarray uintptr
+type CUtexObject uint64
+type CUsurfObject uint64
 
 // CUjitInputType specifies device-code input types to the JIT linker.
 type CUjitInputType int32
@@ -104,6 +106,57 @@ type CUDA_ARRAY_DESCRIPTOR struct {
 	Height      uint64
 	Format      CUarray_format
 	NumChannels uint32
+}
+
+// CUresourcetype specifies resource type for texture/surface descriptors.
+type CUresourcetype int32
+
+const (
+	CU_RESOURCE_TYPE_ARRAY           CUresourcetype = 0x00
+	CU_RESOURCE_TYPE_MIPMAPPED_ARRAY CUresourcetype = 0x01
+	CU_RESOURCE_TYPE_LINEAR          CUresourcetype = 0x02
+	CU_RESOURCE_TYPE_PITCH2D         CUresourcetype = 0x03
+)
+
+// CUaddress_mode specifies texture addressing modes.
+type CUaddress_mode int32
+
+const (
+	CU_TR_ADDRESS_MODE_WRAP   CUaddress_mode = 0
+	CU_TR_ADDRESS_MODE_CLAMP  CUaddress_mode = 1
+	CU_TR_ADDRESS_MODE_MIRROR CUaddress_mode = 2
+	CU_TR_ADDRESS_MODE_BORDER CUaddress_mode = 3
+)
+
+// CUfilter_mode specifies texture filtering modes.
+type CUfilter_mode int32
+
+const (
+	CU_TR_FILTER_MODE_POINT  CUfilter_mode = 0
+	CU_TR_FILTER_MODE_LINEAR CUfilter_mode = 1
+)
+
+// CUDA_RESOURCE_DESC (144 bytes) contains resource binding parameters for texture and surface objects.
+type CUDA_RESOURCE_DESC struct {
+	ResType CUresourcetype
+	_       uint32 // padding
+	ResData [16]uint64
+	Flags   uint32
+	_       uint32 // padding
+}
+
+// CUDA_TEXTURE_DESC (104 bytes) contains sampling configuration for texture objects.
+type CUDA_TEXTURE_DESC struct {
+	AddressMode         [3]CUaddress_mode
+	FilterMode          CUfilter_mode
+	Flags               uint32
+	MaxAnisotropy       uint32
+	MipmapFilterMode    CUfilter_mode
+	MipmapLevelBias     float32
+	MinMipmapLevelClamp float32
+	MaxMipmapLevelClamp float32
+	BorderColor         [4]float32
+	Reserved            [12]int32
 }
 
 // CU_DEVICE_CPU indicates CPU device target for prefetching.

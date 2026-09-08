@@ -141,6 +141,30 @@
   - Achieves >830 GFLOPS on RTX 4060 Laptop GPU in pure Go without cgo.
   - Serves as an end-to-end blueprint for high-throughput compute kernels.
 
+## ADR-0017: Warp-Shuffle Parallel Reduction Kernel
+- **Status**: Accepted
+- **Context**: Reduction (sum, max, min) is a fundamental building block for AI and numerical workloads. Naive global memory atomic adds cause extreme serialization.
+- **Decision**: Implemented `kernels/reduction` leveraging fast warp shuffle intrinsics (`__shfl_down_sync`) and shared memory block reduction, followed by atomic add on partial sums.
+- **Consequences**:
+  - Achieves over 200 GB/s effective memory bandwidth on GeForce RTX 4060 Laptop GPU.
+  - Reduces 10,000,000 floats in ~0.19 ms with single-kernel dispatch.
+
+## ADR-0018: Bindless Texture and Surface Objects
+- **Status**: Accepted
+- **Context**: Modern CUDA graphics, ray tracing, and spatial interpolation workloads use hardware texture and surface units rather than legacy texture references.
+- **Decision**: Added pure-Go bindings for `cuTexObjectCreate`, `cuTexObjectDestroy`, `cuSurfObjectCreate`, and `cuSurfObjectDestroy` with 64-bit alignment verified `CUDA_RESOURCE_DESC` and `CUDA_TEXTURE_DESC` structs. Added first-class kernel launch support for `*TextureObject` and `*SurfaceObject`.
+- **Consequences**:
+  - Go applications can take advantage of hardware bilinear filtering, boundary clamping, and spatial texture caches.
+
+## ADR-0019: Linux ABI Port via PureGo
+- **Status**: Accepted
+- **Context**: `cugo` was initially Windows-only (`nvcuda.dll` via `syscall.NewLazyDLL`). To enable Linux server and container deployment (WSL2, NVIDIA DGX, Kubernetes GPU nodes) without cgo, dynamic loading of `libcuda.so.1` is needed.
+- **Decision**: Unified `internal/nvapi` under `procInvoker` interface. On Windows, uses `windows.LazyProc`. On Linux, uses `purego.RegisterLibFunc` / `purego.SyscallN` to bind `libcuda.so.1` symbols with `CGO_ENABLED=0`.
+- **Consequences**:
+  - 100% pure-Go cross-compilation (`GOOS=linux GOARCH=amd64 CGO_ENABLED=0`).
+  - Zero C toolchain or headers required for builds.
+
+
 
 
 

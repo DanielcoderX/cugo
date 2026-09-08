@@ -71,3 +71,10 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuMemcpy2DAsync_v2` | Yes | `Stream.Copy2DAsync` | Stable | Asynchronous 2D memory copy |
 | `cuArrayCreate_v2` | Yes | `Context.CreateArray2D` | Stable | Create 2D CUDA hardware array |
 | `cuArrayDestroy` | Yes | `Array2D.Destroy` | Stable | Destroy 2D CUDA hardware array |
+| `cuProfilerStart` | Yes | `driver.ProfilerStart` | Stable | Start hardware profiler collection |
+| `cuProfilerStop` | Yes | `driver.ProfilerStop` | Stable | Stop hardware profiler collection |
+| `cuTexObjectCreate` | Yes | `Context.CreateTextureObject` | Stable | Create bindless hardware texture object |
+| `cuTexObjectDestroy` | Yes | `TextureObject.Destroy` | Stable | Destroy hardware texture object |
+| `cuSurfObjectCreate` | Yes | `Context.CreateSurfaceObject` | Stable | Create read/write hardware surface object |
+| `cuSurfObjectDestroy` | Yes | `SurfaceObject.Destroy` | Stable | Destroy hardware surface object |
+

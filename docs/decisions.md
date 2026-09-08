@@ -132,5 +132,15 @@
   - Automatically adheres to hardware pitch alignment constraints.
   - Rectangular memory copies handle differing source and destination pitches seamlessly without manual pointer arithmetic.
 
+## ADR-0016: Shared-Memory Tiled Matrix Multiplication (GEMM)
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Real-world GPU compute workloads need demonstrations beyond 1D element-wise kernels to showcase memory coalescing, 2D launch configurations, and shared memory tiling.
+- **Decision**: Provide `kernels/gemm` with a 16x16 shared-memory tiled matrix multiplication kernel and benchmark example (`examples/gemm`).
+- **Consequences**:
+  - Achieves >830 GFLOPS on RTX 4060 Laptop GPU in pure Go without cgo.
+  - Serves as an end-to-end blueprint for high-throughput compute kernels.
+
+
 
 

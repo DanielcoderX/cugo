@@ -2,6 +2,8 @@
 
 package nvapi
 
+import "unsafe"
+
 // Core handle types matching cuda.h exactly.
 type CUdevice int32
 type CUdeviceptr uintptr
@@ -14,6 +16,7 @@ type CUgraph uintptr
 type CUgraphExec uintptr
 type CUmemoryPool uintptr
 type CUlinkState uintptr
+type CUarray uintptr
 
 // CUjitInputType specifies device-code input types to the JIT linker.
 type CUjitInputType int32
@@ -46,6 +49,62 @@ const (
 	CU_JIT_GENERATE_LINE_INFO          CUjit_option = 13
 	CU_JIT_CACHE_MODE                  CUjit_option = 14
 )
+
+// CUmemorytype represents memory types for 2D copies.
+type CUmemorytype int32
+
+const (
+	CU_MEMORYTYPE_HOST    CUmemorytype = 0x01
+	CU_MEMORYTYPE_DEVICE  CUmemorytype = 0x02
+	CU_MEMORYTYPE_ARRAY   CUmemorytype = 0x03
+	CU_MEMORYTYPE_UNIFIED CUmemorytype = 0x04
+)
+
+// CUarray_format represents array element format types.
+type CUarray_format int32
+
+const (
+	CU_AD_FORMAT_UNSIGNED_INT8  CUarray_format = 0x01
+	CU_AD_FORMAT_UNSIGNED_INT16 CUarray_format = 0x02
+	CU_AD_FORMAT_UNSIGNED_INT32 CUarray_format = 0x03
+	CU_AD_FORMAT_SIGNED_INT8    CUarray_format = 0x08
+	CU_AD_FORMAT_SIGNED_INT16   CUarray_format = 0x09
+	CU_AD_FORMAT_SIGNED_INT32   CUarray_format = 0x0a
+	CU_AD_FORMAT_HALF           CUarray_format = 0x10
+	CU_AD_FORMAT_FLOAT          CUarray_format = 0x20
+)
+
+// CUDA_MEMCPY2D contains parameters for 2D memory copies matching CUDA C ABI exactly.
+type CUDA_MEMCPY2D struct {
+	SrcXInBytes   uint64
+	SrcY          uint64
+	SrcMemoryType CUmemorytype
+	_             uint32 // explicit padding for 8-byte pointer alignment
+	SrcHost       unsafe.Pointer
+	SrcDevice     CUdeviceptr
+	SrcArray      CUarray
+	SrcPitch      uint64
+
+	DstXInBytes   uint64
+	DstY          uint64
+	DstMemoryType CUmemorytype
+	_             uint32 // explicit padding for 8-byte pointer alignment
+	DstHost       unsafe.Pointer
+	DstDevice     CUdeviceptr
+	DstArray      CUarray
+	DstPitch      uint64
+
+	WidthInBytes uint64
+	Height       uint64
+}
+
+// CUDA_ARRAY_DESCRIPTOR contains parameters for allocating CUDA 2D arrays.
+type CUDA_ARRAY_DESCRIPTOR struct {
+	Width       uint64
+	Height      uint64
+	Format      CUarray_format
+	NumChannels uint32
+}
 
 // CU_DEVICE_CPU indicates CPU device target for prefetching.
 const CU_DEVICE_CPU CUdevice = -1

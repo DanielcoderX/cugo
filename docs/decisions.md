@@ -123,4 +123,14 @@
   - Direct in-process JIT compilation and linking of PTX strings/files to native hardware cubin binaries.
   - Returned cubin bytecode is immediately loadable via `Context.LoadModuleData()`.
 
+## ADR-0015: 2D Pitched Memory Allocations and Strided Copies
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: 2D matrices and image processing kernels require row-aligned stride allocations to guarantee coalesced memory transactions on hardware.
+- **Decision**: Wrap `cuMemAllocPitch_v2`, `cuMemcpy2D_v2`, `cuMemcpy2DAsync_v2`, `cuArrayCreate_v2`, and `cuArrayDestroy` in `Context.AllocPitch`, `Context.Copy2D`, `Stream.Copy2DAsync`, and `Context.CreateArray2D`.
+- **Consequences**:
+  - Automatically adheres to hardware pitch alignment constraints.
+  - Rectangular memory copies handle differing source and destination pitches seamlessly without manual pointer arithmetic.
+
+
 

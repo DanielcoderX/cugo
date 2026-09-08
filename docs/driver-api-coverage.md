@@ -66,3 +66,8 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuLinkAddData_v2` | Yes | `Linker.AddPTX`, `Linker.AddCubin` | Stable | Add PTX/CUBIN code to linker |
 | `cuLinkComplete` | Yes | `Linker.Complete` | Stable | Finalize and retrieve CUBIN binary |
 | `cuLinkDestroy` | Yes | `Linker.Destroy` | Stable | Free JIT linker state |
+| `cuMemAllocPitch_v2` | Yes | `Context.AllocPitch` | Stable | Allocate 2D pitched device memory |
+| `cuMemcpy2D_v2` | Yes | `Context.Copy2D` | Stable | Synchronous 2D rectangular memory copy |
+| `cuMemcpy2DAsync_v2` | Yes | `Stream.Copy2DAsync` | Stable | Asynchronous 2D memory copy |
+| `cuArrayCreate_v2` | Yes | `Context.CreateArray2D` | Stable | Create 2D CUDA hardware array |
+| `cuArrayDestroy` | Yes | `Array2D.Destroy` | Stable | Destroy 2D CUDA hardware array |

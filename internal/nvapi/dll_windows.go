@@ -49,6 +49,11 @@ var (
 	procMemAllocManaged         = nvcuda.NewProc("cuMemAllocManaged")
 	procMemPrefetchAsync        = nvcuda.NewProc("cuMemPrefetchAsync")
 	procMemAdvise               = nvcuda.NewProc("cuMemAdvise")
+	procMemAllocPitch           = nvcuda.NewProc("cuMemAllocPitch_v2")
+	procMemcpy2D                = nvcuda.NewProc("cuMemcpy2D_v2")
+	procMemcpy2DAsync           = nvcuda.NewProc("cuMemcpy2DAsync_v2")
+	procArrayCreate             = nvcuda.NewProc("cuArrayCreate_v2")
+	procArrayDestroy            = nvcuda.NewProc("cuArrayDestroy")
 
 	// Peer-to-Peer Access
 	procDeviceCanAccessPeer   = nvcuda.NewProc("cuDeviceCanAccessPeer")
@@ -894,5 +899,74 @@ func CuLinkDestroy(state CUlinkState) error {
 		return fmt.Errorf("%w: cuLinkDestroy: %v", ErrProcNotFound, err)
 	}
 	r, _, _ := procLinkDestroy.Call(uintptr(state))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemAllocPitch allocates pitched device memory.
+func CuMemAllocPitch(
+	dptr *CUdeviceptr,
+	pPitch *uint64,
+	widthInBytes uint64,
+	height uint64,
+	elementSizeBytes uint32,
+) error {
+	if err := procMemAllocPitch.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemAllocPitch_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemAllocPitch.Call(
+		uintptr(unsafe.Pointer(dptr)),
+		uintptr(unsafe.Pointer(pPitch)),
+		uintptr(widthInBytes),
+		uintptr(height),
+		uintptr(elementSizeBytes),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpy2D performs a 2D memory copy between host, device, and array memory.
+func CuMemcpy2D(pCopy *CUDA_MEMCPY2D) error {
+	if pCopy == nil {
+		return errors.New("cugo: nil 2D copy params")
+	}
+	if err := procMemcpy2D.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpy2D_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpy2D.Call(uintptr(unsafe.Pointer(pCopy)))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpy2DAsync performs an asynchronous 2D memory copy on a stream.
+func CuMemcpy2DAsync(pCopy *CUDA_MEMCPY2D, hStream CUstream) error {
+	if pCopy == nil {
+		return errors.New("cugo: nil 2D copy params")
+	}
+	if err := procMemcpy2DAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpy2DAsync_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpy2DAsync.Call(uintptr(unsafe.Pointer(pCopy)), uintptr(hStream))
+	return ResultToError(CUresult(r))
+}
+
+// CuArrayCreate creates a 2D CUDA array.
+func CuArrayCreate(pHandle *CUarray, pAllocateArray *CUDA_ARRAY_DESCRIPTOR) error {
+	if pAllocateArray == nil {
+		return errors.New("cugo: nil array descriptor")
+	}
+	if err := procArrayCreate.Find(); err != nil {
+		return fmt.Errorf("%w: cuArrayCreate_v2: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procArrayCreate.Call(
+		uintptr(unsafe.Pointer(pHandle)),
+		uintptr(unsafe.Pointer(pAllocateArray)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuArrayDestroy destroys a CUDA array.
+func CuArrayDestroy(hArray CUarray) error {
+	if err := procArrayDestroy.Find(); err != nil {
+		return fmt.Errorf("%w: cuArrayDestroy: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procArrayDestroy.Call(uintptr(hArray))
 	return ResultToError(CUresult(r))
 }

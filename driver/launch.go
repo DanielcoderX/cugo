@@ -5,6 +5,7 @@ package driver
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"runtime"
 	"unsafe"
 
@@ -80,12 +81,71 @@ func (a *rawArg) argPtr() unsafe.Pointer { return a.p }
 // Raw creates a KernelArg pointing directly to an existing memory buffer.
 func Raw(p unsafe.Pointer) KernelArg { return &rawArg{p: p} }
 
+// Bool creates a KernelArg for an 8-bit boolean.
+func Bool(v bool) KernelArg {
+	var b uint8
+	if v {
+		b = 1
+	}
+	return &uint8Arg{val: b}
+}
+
+type int8Arg struct{ val int8 }
+
+func (a *int8Arg) argPtr() unsafe.Pointer { return unsafe.Pointer(&a.val) }
+
+// Int8 creates a KernelArg for an 8-bit signed integer.
+func Int8(v int8) KernelArg { return &int8Arg{val: v} }
+
+type uint8Arg struct{ val uint8 }
+
+func (a *uint8Arg) argPtr() unsafe.Pointer { return unsafe.Pointer(&a.val) }
+
+// Uint8 creates a KernelArg for an 8-bit unsigned integer (byte).
+func Uint8(v uint8) KernelArg { return &uint8Arg{val: v} }
+
+type int16Arg struct{ val int16 }
+
+func (a *int16Arg) argPtr() unsafe.Pointer { return unsafe.Pointer(&a.val) }
+
+// Int16 creates a KernelArg for a 16-bit signed integer.
+func Int16(v int16) KernelArg { return &int16Arg{val: v} }
+
+type uint16Arg struct{ val uint16 }
+
+func (a *uint16Arg) argPtr() unsafe.Pointer { return unsafe.Pointer(&a.val) }
+
+// Uint16 creates a KernelArg for a 16-bit unsigned integer.
+func Uint16(v uint16) KernelArg { return &uint16Arg{val: v} }
+
 func toKernelArg(v any) (KernelArg, error) {
+	if v == nil {
+		return nil, errors.New("cugo: nil kernel argument is not supported")
+	}
+
 	switch val := v.(type) {
 	case KernelArg:
 		return val, nil
 	case DevicePtr:
 		return Ptr(val), nil
+	case uintptr:
+		return Ptr(DevicePtr(val)), nil
+	case *HostMem:
+		dptr, err := val.DevicePointer()
+		if err != nil {
+			return nil, err
+		}
+		return Ptr(dptr), nil
+	case bool:
+		return Bool(val), nil
+	case int8:
+		return Int8(val), nil
+	case uint8:
+		return Uint8(val), nil
+	case int16:
+		return Int16(val), nil
+	case uint16:
+		return Uint16(val), nil
 	case int32:
 		return Int32(val), nil
 	case int:
@@ -105,7 +165,17 @@ func toKernelArg(v any) (KernelArg, error) {
 	case unsafe.Pointer:
 		return Raw(val), nil
 	default:
-		return nil, fmt.Errorf("unsupported argument type %T (use driver.Raw if custom struct)", v)
+		// Reflection fallback for structs & pointer to structs
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Struct {
+			copyVal := reflect.New(rv.Type())
+			copyVal.Elem().Set(rv)
+			return Raw(copyVal.UnsafePointer()), nil
+		}
+		if rv.Kind() == reflect.Pointer && rv.Elem().Kind() == reflect.Struct {
+			return Raw(rv.UnsafePointer()), nil
+		}
+		return nil, fmt.Errorf("cugo: unsupported argument type %T (use driver.Raw if custom memory)", v)
 	}
 }
 

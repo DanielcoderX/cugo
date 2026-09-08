@@ -62,3 +62,12 @@
 - **Consequences**:
   - DMA bandwidth increases to ~13 GB/s.
   - Zero-copy execution allows GPU kernels to read and write directly to mapped host memory without separate `CopyHtoD` / `CopyDtoH` memcpy calls.
+
+## ADR-0008: Reflection-Based Struct & Primitive Argument Marshaling
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: CUDA kernels frequently accept structs passed by value (e.g. configuration blocks, hyperparameters) or pointers to structs, as well as fine-grained primitive types (`int8`, `uint8`, `int16`, `uint16`, `bool`).
+- **Decision**: Extend `toKernelArg` with direct type cases for all Go primitives and a reflection fallback (`reflect.ValueOf`) for structs and pointers to structs. For by-value structs, allocate an addressable copy (`reflect.New(rv.Type())`) and pass its pointer to `cuLaunchKernel`.
+- **Consequences**:
+  - Full transparency for developers passing custom Go structs directly to `fn.Launch(cfg, myStruct)` matching CUDA C `__global__ void myKernel(MyStruct s)`.
+  - Zero manual packing code required for complex kernel parameter lists.

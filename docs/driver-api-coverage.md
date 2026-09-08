@@ -77,4 +77,8 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuTexObjectDestroy` | Yes | `TextureObject.Destroy` | Stable | Destroy hardware texture object |
 | `cuSurfObjectCreate` | Yes | `Context.CreateSurfaceObject` | Stable | Create read/write hardware surface object |
 | `cuSurfObjectDestroy` | Yes | `SurfaceObject.Destroy` | Stable | Destroy hardware surface object |
+| `cuGraphGetNodes` | Yes | `Graph.Nodes` | Stable | Inspect node topology inside CUDA graph |
+| `cuGraphNodeGetType` | Yes | `GraphNode.Type` | Stable | Query node type (kernel, memcpy, etc.) |
+| `cuGraphExecKernelNodeSetParams` | Yes | `GraphExec.SetKernelNodeParams` | Stable | Dynamic in-place update of kernel node params |
+
 

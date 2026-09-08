@@ -232,16 +232,10 @@ func (f *Function) Launch(cfg LaunchConfig, args ...any) error {
 	var kargs []KernelArg
 
 	if len(args) > 0 {
-		paramPtrs = make([]unsafe.Pointer, len(args))
-		kargs = make([]KernelArg, len(args))
-
-		for i, arg := range args {
-			karg, err := toKernelArg(arg)
-			if err != nil {
-				return fmt.Errorf("cugo: kernel argument %d: %w", i, err)
-			}
-			kargs[i] = karg
-			paramPtrs[i] = karg.argPtr()
+		var err error
+		paramPtrs, kargs, err = buildKernelArgs(args)
+		if err != nil {
+			return err
 		}
 		kernelParams = unsafe.Pointer(&paramPtrs[0])
 	}
@@ -270,3 +264,19 @@ func (f *Function) Launch(cfg LaunchConfig, args ...any) error {
 
 	return nil
 }
+
+func buildKernelArgs(args []any) ([]unsafe.Pointer, []KernelArg, error) {
+	paramPtrs := make([]unsafe.Pointer, len(args))
+	kargs := make([]KernelArg, len(args))
+
+	for i, arg := range args {
+		karg, err := toKernelArg(arg)
+		if err != nil {
+			return nil, nil, fmt.Errorf("cugo: kernel argument %d: %w", i, err)
+		}
+		kargs[i] = karg
+		paramPtrs[i] = karg.argPtr()
+	}
+	return paramPtrs, kargs, nil
+}
+

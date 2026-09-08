@@ -164,6 +164,29 @@
   - 100% pure-Go cross-compilation (`GOOS=linux GOARCH=amd64 CGO_ENABLED=0`).
   - Zero C toolchain or headers required for builds.
 
+## ADR-0020: CUDA Graph Node Inspection and Dynamic Parameter Updates
+- **Status**: Accepted
+- **Context**: Re-capturing or re-instantiating CUDA graphs when kernel parameters or pointers change incurs high CPU latency. Real-time inference pipelines need zero-overhead parameter updates without altering graph topology.
+- **Decision**: Implemented `cuGraphGetNodes`, `cuGraphNodeGetType`, and `cuGraphExecKernelNodeSetParams` exposed as `Graph.Nodes()` and `GraphExec.SetKernelNodeParams()`.
+- **Consequences**:
+  - Allows swapping input/output pointers and scalar arguments in-place on instantiated graphs.
+  - Sub-microsecond parameter updates.
+
+## ADR-0021: Warp-Shuffle Numerically Stable Softmax Kernel
+- **Status**: Accepted
+- **Context**: Transformer models and deep learning classifiers require row-wise softmax across attention and logit tensors. Standard global memory reductions cause thread divergence and multiple kernel passes.
+- **Decision**: Implemented `kernels/softmax` using single-pass online softmax with warp shuffles (`__shfl_down_sync`) and shared memory block reduction.
+- **Consequences**:
+  - Evaluated on matrix batches (up to 128x1024), achieving exact match against CPU reference.
+
+## ADR-0022: Multi-Stream 3-Stage Overlapped Pipeline
+- **Status**: Accepted
+- **Context**: Moving data between CPU and GPU over PCIe 4.0 often creates a bottleneck if host-to-device, compute, and device-to-host operations run sequentially.
+- **Decision**: Implemented `examples/pipeline` using page-locked pinned host memory (`AllocHost`) and multiple concurrent streams to overlap HtoD copy, kernel compute, and DtoH copy across chunks.
+- **Consequences**:
+  - Achieves 9.79 GB/s end-to-end pipelined throughput on 16M elements (64MB vectors).
+
+
 
 
 

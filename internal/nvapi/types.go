@@ -14,11 +14,46 @@ type CUstream uintptr
 type CUevent uintptr
 type CUgraph uintptr
 type CUgraphExec uintptr
+type CUgraphNode uintptr
 type CUmemoryPool uintptr
 type CUlinkState uintptr
 type CUarray uintptr
 type CUtexObject uint64
 type CUsurfObject uint64
+
+// CUgraphNodeType specifies the type of a graph node.
+type CUgraphNodeType int32
+
+const (
+	CU_GRAPH_NODE_TYPE_KERNEL          CUgraphNodeType = 0
+	CU_GRAPH_NODE_TYPE_MEMCPY          CUgraphNodeType = 1
+	CU_GRAPH_NODE_TYPE_MEMSET          CUgraphNodeType = 2
+	CU_GRAPH_NODE_TYPE_HOST            CUgraphNodeType = 3
+	CU_GRAPH_NODE_TYPE_GRAPH           CUgraphNodeType = 4
+	CU_GRAPH_NODE_TYPE_EMPTY           CUgraphNodeType = 5
+	CU_GRAPH_NODE_TYPE_WAIT_EVENT      CUgraphNodeType = 6
+	CU_GRAPH_NODE_TYPE_EVENT_RECORD    CUgraphNodeType = 7
+	CU_GRAPH_NODE_TYPE_EXT_SEMAS_SIGNAL CUgraphNodeType = 8
+	CU_GRAPH_NODE_TYPE_EXT_SEMAS_WAIT   CUgraphNodeType = 9
+	CU_GRAPH_NODE_TYPE_MEM_ALLOC       CUgraphNodeType = 10
+	CU_GRAPH_NODE_TYPE_MEM_FREE        CUgraphNodeType = 11
+	CU_GRAPH_NODE_TYPE_BATCH_MEM_OP    CUgraphNodeType = 12
+)
+
+// CUDA_KERNEL_NODE_PARAMS specifies parameters for a graph kernel node.
+type CUDA_KERNEL_NODE_PARAMS struct {
+	Func           CUfunction
+	GridDimX       uint32
+	GridDimY       uint32
+	GridDimZ       uint32
+	BlockDimX      uint32
+	BlockDimY      uint32
+	BlockDimZ      uint32
+	SharedMemBytes uint32
+	KernelParams   *unsafe.Pointer
+	Extra          *unsafe.Pointer
+}
+
 
 // CUjitInputType specifies device-code input types to the JIT linker.
 type CUjitInputType int32

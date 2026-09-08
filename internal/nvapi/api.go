@@ -80,9 +80,13 @@ var (
 	procStreamBeginCapture = newDriverProc("cuStreamBeginCapture_v2")
 	procStreamEndCapture   = newDriverProc("cuStreamEndCapture")
 	procStreamIsCapturing  = newDriverProc("cuStreamIsCapturing")
-	procGraphInstantiate   = newDriverProc("cuGraphInstantiate_v2")
-	procGraphLaunch        = newDriverProc("cuGraphLaunch")
-	procGraphExecDestroy   = newDriverProc("cuGraphExecDestroy")
+	procGraphInstantiate             = newDriverProc("cuGraphInstantiate_v2")
+	procGraphLaunch                  = newDriverProc("cuGraphLaunch")
+	procGraphExecDestroy             = newDriverProc("cuGraphExecDestroy")
+	procGraphGetNodes                = newDriverProc("cuGraphGetNodes")
+	procGraphNodeGetType             = newDriverProc("cuGraphNodeGetType")
+	procGraphExecKernelNodeSetParams = newDriverProc("cuGraphExecKernelNodeSetParams")
+
 
 	// Stream-Ordered Memory Allocator
 	procMemAllocAsync       = newDriverProc("cuMemAllocAsync")
@@ -750,6 +754,46 @@ func CuGraphExecDestroy(hGraphExec CUgraphExec) error {
 	r, _, _ := procGraphExecDestroy.Call(uintptr(hGraphExec))
 	return ResultToError(CUresult(r))
 }
+
+// CuGraphGetNodes returns the nodes in a graph.
+// If nodes is nil, numNodes returns the total number of nodes in hGraph.
+func CuGraphGetNodes(hGraph CUgraph, nodes *CUgraphNode, numNodes *uint64) error {
+	if err := procGraphGetNodes.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphGetNodes: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphGetNodes.Call(
+		uintptr(hGraph),
+		uintptr(unsafe.Pointer(nodes)),
+		uintptr(unsafe.Pointer(numNodes)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphNodeGetType returns the type of a graph node.
+func CuGraphNodeGetType(hNode CUgraphNode, nodeType *CUgraphNodeType) error {
+	if err := procGraphNodeGetType.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphNodeGetType: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphNodeGetType.Call(
+		uintptr(hNode),
+		uintptr(unsafe.Pointer(nodeType)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuGraphExecKernelNodeSetParams updates the parameters of a kernel node in an instantiated graph.
+func CuGraphExecKernelNodeSetParams(hGraphExec CUgraphExec, hNode CUgraphNode, nodeParams *CUDA_KERNEL_NODE_PARAMS) error {
+	if err := procGraphExecKernelNodeSetParams.Find(); err != nil {
+		return fmt.Errorf("%w: cuGraphExecKernelNodeSetParams: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procGraphExecKernelNodeSetParams.Call(
+		uintptr(hGraphExec),
+		uintptr(hNode),
+		uintptr(unsafe.Pointer(nodeParams)),
+	)
+	return ResultToError(CUresult(r))
+}
+
 
 // CuMemAllocAsync allocates memory asynchronously on a stream.
 func CuMemAllocAsync(dptr *CUdeviceptr, bytesize uint64, hStream CUstream) error {

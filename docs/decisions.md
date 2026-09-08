@@ -80,3 +80,12 @@
 - **Consequences**:
   - Developers can allocate shared CPU-GPU memory with a single call to `ctx.AllocManaged()`.
   - Hardware MMU migrates pages on demand; `PrefetchToDevice` and `PrefetchToCPU` enable deterministic page migration ahead of time.
+
+## ADR-0010: Multi-GPU Peer-to-Peer Access
+- **Date**: 2026-09-08
+- **Status**: Accepted
+- **Context**: Multi-GPU hosts running parallel compute tasks need high-speed direct GPU-to-GPU memory copies without staging through host RAM.
+- **Decision**: Expose `Device.CanAccessPeer()`, `Context.EnablePeerAccess()`, and `driver.CopyPeer()` / `driver.CopyPeerAsync()`.
+- **Consequences**:
+  - Enables direct NVLink / PCIe P2P DMA transfers between distinct GPU contexts.
+  - Returns clear errors on unsupported hardware links.

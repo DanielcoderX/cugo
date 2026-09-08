@@ -5,6 +5,7 @@ package driver_test
 import (
 	"errors"
 	"math"
+	"runtime"
 	"testing"
 	"unsafe"
 
@@ -14,6 +15,9 @@ import (
 )
 
 func TestUnifiedMemoryAllocFree(t *testing.T) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	if err := nvapi.CheckDriver(); err != nil {
 		t.Skipf("skipped: no CUDA driver: %v", err)
 	}
@@ -65,6 +69,9 @@ func TestUnifiedMemoryAllocFree(t *testing.T) {
 }
 
 func TestUnifiedMemoryVecAdd(t *testing.T) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	if err := nvapi.CheckDriver(); err != nil {
 		t.Skipf("skipped: no CUDA driver: %v", err)
 	}

@@ -39,3 +39,9 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuEventRecord` | Yes | `Event.Record` | Stable | Record event on stream |
 | `cuEventSynchronize` | Yes | `Event.Synchronize` | Stable | Block on event completion |
 | `cuEventElapsedTime` | Yes | `driver.ElapsedTime` | Stable | Compute elapsed ms between events |
+| `cuDeviceCanAccessPeer` | Yes | `Device.CanAccessPeer` | Stable | Query peer-to-peer capability |
+| `cuCtxEnablePeerAccess` | Yes | `Context.EnablePeerAccess` | Stable | Enable direct P2P access between GPUs |
+| `cuCtxDisablePeerAccess` | Yes | `Context.DisablePeerAccess` | Stable | Disable direct P2P access |
+| `cuMemcpyPeer` | Yes | `driver.CopyPeer` | Stable | Direct GPU-to-GPU memory copy |
+| `cuMemcpyPeerAsync` | Yes | `driver.CopyPeerAsync` | Stable | Asynchronous GPU-to-GPU copy |
+| `cuDeviceGetP2PAttribute` | Yes | `Device.P2PAttribute` | Stable | Query P2P link performance & attributes |

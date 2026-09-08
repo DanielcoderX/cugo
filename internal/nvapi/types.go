@@ -33,6 +33,17 @@ const (
 	CU_MEM_ADVISE_UNSET_ACCESSED_BY        CUmem_advise = 6
 )
 
+// CUdevice_P2PAttribute represents peer-to-peer link attributes between two devices.
+type CUdevice_P2PAttribute int32
+
+const (
+	CU_DEVICE_P2P_ATTRIBUTE_PERFORMANCE_RANK                     CUdevice_P2PAttribute = 0x01
+	CU_DEVICE_P2P_ATTRIBUTE_ACCESS_SUPPORTED                     CUdevice_P2PAttribute = 0x02
+	CU_DEVICE_P2P_ATTRIBUTE_NATIVE_ATOMIC_SUPPORTED              CUdevice_P2PAttribute = 0x03
+	CU_DEVICE_P2P_ATTRIBUTE_CUDA_ARRAY_ACCESS_SUPPORTED          CUdevice_P2PAttribute = 0x04
+	CU_DEVICE_P2P_ATTRIBUTE_ONLY_PARTIAL_NATIVE_ATOMIC_SUPPORTED CUdevice_P2PAttribute = 0x05
+)
+
 // CUdevice_attribute represents hardware properties queryable on CUdevice.
 type CUdevice_attribute int32
 

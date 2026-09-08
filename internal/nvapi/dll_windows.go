@@ -49,6 +49,14 @@ var (
 	procMemPrefetchAsync        = nvcuda.NewProc("cuMemPrefetchAsync")
 	procMemAdvise               = nvcuda.NewProc("cuMemAdvise")
 
+	// Peer-to-Peer Access
+	procDeviceCanAccessPeer   = nvcuda.NewProc("cuDeviceCanAccessPeer")
+	procCtxEnablePeerAccess   = nvcuda.NewProc("cuCtxEnablePeerAccess")
+	procCtxDisablePeerAccess  = nvcuda.NewProc("cuCtxDisablePeerAccess")
+	procMemcpyPeer            = nvcuda.NewProc("cuMemcpyPeer")
+	procMemcpyPeerAsync       = nvcuda.NewProc("cuMemcpyPeerAsync")
+	procDeviceGetP2PAttribute = nvcuda.NewProc("cuDeviceGetP2PAttribute")
+
 	// Module & Kernel Launch
 	procModuleLoadData   = nvcuda.NewProc("cuModuleLoadData")
 	procModuleUnload     = nvcuda.NewProc("cuModuleUnload")
@@ -342,6 +350,98 @@ func CuMemAdvise(devPtr CUdeviceptr, count uint64, advice CUmem_advise, device C
 		uintptr(count),
 		uintptr(advice),
 		uintptr(device),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuDeviceCanAccessPeer queries if the device can directly access peerDevice memory.
+func CuDeviceCanAccessPeer(canAccess *int32, dev CUdevice, peerDev CUdevice) error {
+	if err := procDeviceCanAccessPeer.Find(); err != nil {
+		return fmt.Errorf("%w: cuDeviceCanAccessPeer: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procDeviceCanAccessPeer.Call(
+		uintptr(unsafe.Pointer(canAccess)),
+		uintptr(dev),
+		uintptr(peerDev),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxEnablePeerAccess enables direct peer-to-peer access to memory allocated in peerContext.
+func CuCtxEnablePeerAccess(peerContext CUcontext, flags uint32) error {
+	if err := procCtxEnablePeerAccess.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxEnablePeerAccess: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxEnablePeerAccess.Call(
+		uintptr(peerContext),
+		uintptr(flags),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuCtxDisablePeerAccess disables direct peer-to-peer access to memory allocated in peerContext.
+func CuCtxDisablePeerAccess(peerContext CUcontext) error {
+	if err := procCtxDisablePeerAccess.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxDisablePeerAccess: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxDisablePeerAccess.Call(uintptr(peerContext))
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpyPeer copies memory between two contexts directly.
+func CuMemcpyPeer(
+	dstDevice CUdeviceptr,
+	dstContext CUcontext,
+	srcDevice CUdeviceptr,
+	srcContext CUcontext,
+	byteCount uint64,
+) error {
+	if err := procMemcpyPeer.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpyPeer: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpyPeer.Call(
+		uintptr(dstDevice),
+		uintptr(dstContext),
+		uintptr(srcDevice),
+		uintptr(srcContext),
+		uintptr(byteCount),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemcpyPeerAsync copies memory between two contexts asynchronously.
+func CuMemcpyPeerAsync(
+	dstDevice CUdeviceptr,
+	dstContext CUcontext,
+	srcDevice CUdeviceptr,
+	srcContext CUcontext,
+	byteCount uint64,
+	hStream CUstream,
+) error {
+	if err := procMemcpyPeerAsync.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemcpyPeerAsync: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemcpyPeerAsync.Call(
+		uintptr(dstDevice),
+		uintptr(dstContext),
+		uintptr(srcDevice),
+		uintptr(srcContext),
+		uintptr(byteCount),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuDeviceGetP2PAttribute queries attributes of the P2P connection between two devices.
+func CuDeviceGetP2PAttribute(value *int32, attrib CUdevice_P2PAttribute, srcDevice CUdevice, dstDevice CUdevice) error {
+	if err := procDeviceGetP2PAttribute.Find(); err != nil {
+		return fmt.Errorf("%w: cuDeviceGetP2PAttribute: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procDeviceGetP2PAttribute.Call(
+		uintptr(unsafe.Pointer(value)),
+		uintptr(attrib),
+		uintptr(srcDevice),
+		uintptr(dstDevice),
 	)
 	return ResultToError(CUresult(r))
 }

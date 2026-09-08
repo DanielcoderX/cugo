@@ -4,6 +4,7 @@ package driver_test
 
 import (
 	"math"
+	"runtime"
 	"testing"
 	"unsafe"
 
@@ -28,6 +29,9 @@ func bytesToFloat32Slice(b []byte) []float32 {
 }
 
 func TestVecAddKernelLaunch(t *testing.T) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	if err := nvapi.CheckDriver(); err != nil {
 		t.Skipf("skipped: no CUDA driver: %v", err)
 	}
@@ -134,6 +138,9 @@ func TestVecAddKernelLaunch(t *testing.T) {
 }
 
 func TestStreamsAndEvents(t *testing.T) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	if err := nvapi.CheckDriver(); err != nil {
 		t.Skipf("skipped: no CUDA driver: %v", err)
 	}
@@ -214,6 +221,9 @@ type ScaleParams struct {
 }
 
 func TestStructArgumentKernelLaunch(t *testing.T) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	if err := nvapi.CheckDriver(); err != nil {
 		t.Skipf("skipped: no CUDA driver: %v", err)
 	}

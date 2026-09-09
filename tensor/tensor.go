@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/cugo/cugo/driver"
+	"github.com/cugo/cugo/kernels/vecadd"
 )
 
 var (
@@ -17,12 +18,15 @@ var (
 
 // Tensor represents an n-dimensional array on the GPU, modeled directly on PyTorch's at::Tensor.
 type Tensor struct {
-	storage *Storage
-	offset  uint64  // Byte offset from storage base pointer
-	shape   []int64 // Extent along each dimension
-	strides []int64 // Element stride along each dimension
-	dtype   DType
-	ctx     *driver.Context
+	storage      *Storage
+	offset       uint64  // Byte offset from storage base pointer
+	shape        []int64 // Extent along each dimension
+	strides      []int64 // Element stride along each dimension
+	dtype        DType
+	ctx          *driver.Context
+	RequiresGrad bool
+	Grad         *Tensor
+	GradFn       Node
 }
 
 // computeContiguousStrides calculates the standard row-major (C-contiguous) strides for a shape.
@@ -239,8 +243,86 @@ func (t *Tensor) ToCPUFloat32() ([]float32, error) {
 	return res, nil
 }
 
+// SetRequiresGrad enables or disables gradient tracking for this tensor.
+func (t *Tensor) SetRequiresGrad(r bool) *Tensor {
+	t.RequiresGrad = r
+	return t
+}
+
+// Context returns the underlying CUDA context.
+func (t *Tensor) Context() *driver.Context {
+	return t.ctx
+}
+
+// ZeroGrad resets the tensor's gradient to nil or zero.
+func (t *Tensor) ZeroGrad() {
+	if t.Grad != nil {
+		_ = t.Grad.Close()
+		t.Grad = nil
+	}
+}
+
+// Clone creates a deep copy of the tensor with separate device storage.
+func (t *Tensor) Clone() (*Tensor, error) {
+	if !t.IsContiguous() {
+		return nil, ErrNonContiguous
+	}
+	cp, err := New(t.ctx, t.dtype, t.shape...)
+	if err != nil {
+		return nil, err
+	}
+	byteSize := uint64(t.Numel()) * uint64(t.dtype.Size())
+	hMem, err := t.ToCPUFloat32()
+	if err != nil {
+		_ = cp.Close()
+		return nil, err
+	}
+	raw := unsafe.Slice((*byte)(unsafe.Pointer(&hMem[0])), byteSize)
+	if err := t.ctx.CopyHtoD(cp.DevicePtr(), raw); err != nil {
+		_ = cp.Close()
+		return nil, err
+	}
+	return cp, nil
+}
+
+// AccumulateGrad adds incoming gradient into t.Grad.
+func (t *Tensor) AccumulateGrad(g *Tensor) error {
+	if t.Grad == nil {
+		cloned, err := g.Clone()
+		if err != nil {
+			return err
+		}
+		t.Grad = cloned
+		return nil
+	}
+
+	// Add g to t.Grad on GPU
+	n := int32(t.Numel())
+	mod, err := t.ctx.LoadModuleData(vecadd.PTX)
+	if err != nil {
+		return err
+	}
+	defer mod.Unload()
+
+	fn, err := mod.Function("vecAdd")
+	if err != nil {
+		return err
+	}
+
+	cfg := driver.LaunchConfig{
+		GridDimX:  uint32((n + 255) / 256),
+		BlockDimX: 256,
+	}
+
+	return fn.Launch(cfg, t.Grad.DevicePtr(), g.DevicePtr(), t.Grad.DevicePtr(), n)
+}
+
 // Close releases the Tensor's claim on its underlying Storage.
 func (t *Tensor) Close() error {
+	if t.Grad != nil {
+		_ = t.Grad.Close()
+		t.Grad = nil
+	}
 	if t.storage == nil {
 		return nil
 	}

@@ -16,13 +16,32 @@ var (
 
 // Stream wraps a CUDA asynchronous execution stream (CUstream).
 type Stream struct {
-	handle nvapi.CUstream
-	ctx    *Context
-	mu     sync.Mutex
-	closed bool
+	handle   nvapi.CUstream
+	ctx      *Context
+	mu       sync.Mutex
+	closed   bool
+	priority int
 }
 
-// CreateStream creates an execution stream in this context.
+// Priority returns the scheduling priority assigned to this stream.
+func (s *Stream) Priority() int {
+	return s.priority
+}
+
+// StreamPriorityRange queries the numerical range of valid stream priorities on this context.
+// In CUDA, lower numerical values designate higher scheduling priority.
+func (c *Context) StreamPriorityRange() (least, greatest int, err error) {
+	if err := c.EnsureCurrent(); err != nil {
+		return 0, 0, err
+	}
+	var lp, gp int32
+	if err := nvapi.CuCtxGetStreamPriorityRange(&lp, &gp); err != nil {
+		return 0, 0, fmt.Errorf("cugo: cuCtxGetStreamPriorityRange: %w", err)
+	}
+	return int(lp), int(gp), nil
+}
+
+// CreateStream creates an execution stream in this context using default priority.
 func (c *Context) CreateStream(flags ...uint32) (*Stream, error) {
 	var f uint32
 	if len(flags) > 0 {
@@ -42,6 +61,29 @@ func (c *Context) CreateStream(flags ...uint32) (*Stream, error) {
 		ctx:    c,
 	}, nil
 }
+
+// CreateStreamWithPriority creates an execution stream in this context with the specified scheduling priority.
+func (c *Context) CreateStreamWithPriority(priority int, flags ...uint32) (*Stream, error) {
+	var f uint32
+	if len(flags) > 0 {
+		f = flags[0]
+	}
+	if err := c.EnsureCurrent(); err != nil {
+		return nil, err
+	}
+
+	var rawStream nvapi.CUstream
+	if err := nvapi.CuStreamCreateWithPriority(&rawStream, f, int32(priority)); err != nil {
+		return nil, fmt.Errorf("cugo: cuStreamCreateWithPriority(%d): %w", priority, err)
+	}
+
+	return &Stream{
+		handle:   rawStream,
+		ctx:      c,
+		priority: priority,
+	}, nil
+}
+
 
 // Synchronize blocks until all operations queued in this stream have completed.
 func (s *Stream) Synchronize() error {

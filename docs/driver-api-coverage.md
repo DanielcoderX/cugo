@@ -84,5 +84,9 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuMemsetD32Async` | Yes | `Context.MemsetD32`, `Stream.MemsetD32Async` | Stable | Asynchronous 32-bit word memset on stream |
 | `cuStreamWaitEvent` | Yes | `Stream.WaitEvent` | Stable | Non-blocking GPU-side cross-stream synchronization |
 
+| `cuCtxGetStreamPriorityRange` | Yes | `Context.StreamPriorityRange` | Stable | Query hardware stream priority bounds |
+| `cuStreamCreateWithPriority` | Yes | `Context.CreateStreamWithPriority` | Stable | Create execution stream with custom priority |
+
+
 
 

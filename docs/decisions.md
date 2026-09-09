@@ -207,6 +207,28 @@
 - **Consequences**:
   - Provides a single-command inspection tool for multi-GPU interconnect readiness.
 
+## ADR-0026: Warp-Level GEMV Matrix-Vector Kernel
+- **Status**: Accepted
+- **Context**: Autoregressive LLM inference generation (decode phase) is strictly memory-bandwidth bound ($M=1$, vector-matrix product $y = A x$). 2D block tiled GEMMs designed for compute-bound matrix-matrix multiply suffer low SM occupancy on vector operands.
+- **Decision**: Implemented `kernels/gemv` using a warp-per-row dispatch with coalesced 32-bit stride loops and `__shfl_down_sync` warp reduction to maximize memory bus saturation.
+- **Consequences**:
+  - Handles rectangular and large LLM matrices (e.g. 2048x4096) with near-peak memory bandwidth.
+
+## ADR-0027: Stream Priority Range & Hardware Scheduling Control
+- **Status**: Accepted
+- **Context**: Real-time graphics and low-latency inference pipelines require high-priority work (e.g. head tracking or immediate token generation) to preempt background DMA or async transfers on the GPU SMs.
+- **Decision**: Implemented `cuCtxGetStreamPriorityRange` and `cuStreamCreateWithPriority` exposed via `Context.StreamPriorityRange()` and `Context.CreateStreamWithPriority()`.
+- **Consequences**:
+  - Developers can allocate prioritized streams that preempt lower-priority compute tasks at the GPU hardware scheduler level.
+
+## ADR-0028: Multi-GPU Tensor Parallelism Column Sharding
+- **Status**: Accepted
+- **Context**: LLM parameter counts exceed single-GPU VRAM and require splitting linear layers across GPUs (Megatron-LM column-parallel pattern $Y = [X W_1 \mid X W_2]$).
+- **Decision**: Added `examples/tensor-parallel` showing column-wise weight sharding with parallel stream/context execution and concatenation.
+- **Consequences**:
+  - Validates exact mathematical equivalence (0.000000e+00 diff) between sharded and unsharded GEMM executions.
+
+
 
 
 

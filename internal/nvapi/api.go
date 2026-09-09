@@ -118,7 +118,11 @@ var (
 	procMemsetD32Async  = newDriverProc("cuMemsetD32Async")
 	procStreamWaitEvent = newDriverProc("cuStreamWaitEvent")
 
+	// Stream Priority Range
+	procCtxGetStreamPriorityRange = newDriverProc("cuCtxGetStreamPriorityRange")
+	procStreamCreateWithPriority  = newDriverProc("cuStreamCreateWithPriority")
 )
+
 
 // CuInit initializes the CUDA driver API. Must be called before any other driver functions.
 func CuInit(flags uint32) error {
@@ -1124,4 +1128,30 @@ func CuStreamWaitEvent(hStream CUstream, hEvent CUevent, flags uint32) error {
 	)
 	return ResultToError(CUresult(r))
 }
+
+// CuCtxGetStreamPriorityRange returns numerical limits for stream priorities on current context.
+func CuCtxGetStreamPriorityRange(leastPriority, greatestPriority *int32) error {
+	if err := procCtxGetStreamPriorityRange.Find(); err != nil {
+		return fmt.Errorf("%w: cuCtxGetStreamPriorityRange: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procCtxGetStreamPriorityRange.Call(
+		uintptr(unsafe.Pointer(leastPriority)),
+		uintptr(unsafe.Pointer(greatestPriority)),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamCreateWithPriority creates a stream with specified priority and flags.
+func CuStreamCreateWithPriority(phStream *CUstream, flags uint32, priority int32) error {
+	if err := procStreamCreateWithPriority.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamCreateWithPriority: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamCreateWithPriority.Call(
+		uintptr(unsafe.Pointer(phStream)),
+		uintptr(flags),
+		uintptr(priority),
+	)
+	return ResultToError(CUresult(r))
+}
+
 

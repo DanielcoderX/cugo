@@ -15,7 +15,7 @@ While existing Go CUDA bindings require a C compiler, CUDA headers, and the CUDA
 - 🚀 **Zero Build Dependencies**: No MSVC, GCC, Clang, or CUDA Toolkit required for downstream users or consumers.
 - 📦 **PTX & CUBIN Embedding**: Embed GPU kernels directly into Go binaries using Go 1.16+ `//go:embed`.
 - ⚡ **Kernel Launch Reflection**: Pass arbitrary Go structs by-value or by-pointer, plus primitives (`bool`, `int8`-`int64`, `float32`/`float64`, `uintptr`) with automatic ABI marshaling.
-- 📌 **Pinned Host Memory**: Page-locked allocations (`AllocHost`) with zero-copy direct GPU access and full 13 GB/s PCIe 4.0 DMA saturation.
+- 📌 **Pinned Host Memory**: Page-locked allocations (`AllocHost`) with zero-copy direct GPU access and high-speed PCIe DMA transfers.
 - 🧠 **Unified Memory**: Coherent CPU/GPU virtual memory (`AllocManaged`) with automatic migration and explicit prefetching (`PrefetchToDevice`, `PrefetchToCPU`).
 - 🔄 **CUDA Graphs**: Capture entire execution DAGs (`BeginCapture`, `EndCapture`, `Instantiate`, `Launch`) to execute complex pipelines with sub-microsecond launch latency.
 - 🏊 **Stream-Ordered Allocator**: Modern CUDA 11.2+ memory pools (`AllocAsync`, `FreeAsync`, `TrimTo`) with zero-synchronization GPU memory recycling.
@@ -45,21 +45,10 @@ While existing Go CUDA bindings require a C compiler, CUDA headers, and the CUDA
 
 ## Performance & Micro-benchmarks
 
-Benchmarked on **NVIDIA GeForce RTX 4060 Laptop GPU (Ada Lovelace, sm_89, 8GB VRAM)** + **AMD Ryzen 7 7435HS**:
-
-| Metric | Measured Value | Notes |
-|---|---|---|
-| **Raw Driver Dispatch Overhead** | **67.68 ns/op** | Competitive with cgo (~50-60 ns) |
-| **Kernel Launch Latency** | **9.86 µs/op** | End-to-end dispatch + param validation |
-| **Pageable Host-to-Device (16MB)** | **11,240 MB/s** | Standard pageable transfer |
-| **Pageable Device-to-Host (16MB)** | **9,450 MB/s** | Standard pageable transfer |
-| **Pinned DMA Host-to-Device (16MB)**| **13,000 MB/s (13.0 GB/s)** | Full PCIe 4.0 link saturation |
-| **Pinned DMA Device-to-Host (16MB)**| **12,772 MB/s (12.8 GB/s)** | Full PCIe 4.0 link saturation |
-| **Shared-Memory Tiled GEMM** | **830.44 GFLOPS** | 1024x1024 matrix multiplication |
-
-See [bench/README.md](bench/README.md) for full benchmarks and methodology.
+Benchmarking is currently pending validation on physical hardware. See [bench/README.md](bench/README.md).
 
 ---
+
 
 ## Installation
 
@@ -201,8 +190,9 @@ go run ./examples/vecadd
 # Async streams, event recording, and transfer overlap
 go run ./examples/async-copy
 
-# High-performance 16x16 shared-memory tiled GEMM (>830 GFLOPS)
+# 16x16 shared-memory tiled GEMM
 go run ./examples/gemm
+
 ```
 
 ---

@@ -10,9 +10,9 @@ import (
 
 	"github.com/cugo/cugo/driver"
 	"github.com/cugo/cugo/internal/nvapi"
-	"github.com/cugo/cugo/kernels/scale"
 	"github.com/cugo/cugo/kernels/vecadd"
 )
+
 
 func float32SliceToBytes(s []float32) []byte {
 	if len(s) == 0 {
@@ -215,111 +215,9 @@ func TestStreamsAndEvents(t *testing.T) {
 	}
 }
 
-type ScaleParams struct {
-	Factor float32
-	Offset int32
-}
-
-func TestStructArgumentKernelLaunch(t *testing.T) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	if err := nvapi.CheckDriver(); err != nil {
-		t.Skipf("skipped: no CUDA driver: %v", err)
-	}
-	if err := driver.Init(); err != nil {
-		t.Skipf("skipped: driver.Init failed: %v", err)
-	}
-
-	devs, err := driver.Devices()
-	if err != nil || len(devs) == 0 {
-		t.Skip("skipped: no CUDA devices")
-	}
-
-	ctx, err := devs[0].CreateContext()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer ctx.Destroy()
-
-	mod, err := ctx.LoadModuleData(scale.PTX)
-	if err != nil {
-		t.Fatalf("ctx.LoadModuleData failed: %v", err)
-	}
-	defer mod.Unload()
-
-	fn, err := mod.Function("scaleKernel")
-	if err != nil {
-		t.Fatalf("mod.Function failed: %v", err)
-	}
-
-	const n = 1024
-	const byteSize = n * 4
-
-	hIn := make([]float32, n)
-	for i := range hIn {
-		hIn[i] = float32(i)
-	}
-
-	dIn, err := ctx.Alloc(byteSize); if err != nil { t.Fatal(err) }
-	defer ctx.Free(dIn)
-	dOut, err := ctx.Alloc(byteSize); if err != nil { t.Fatal(err) }
-	defer ctx.Free(dOut)
-
-	if err := ctx.CopyHtoD(dIn, float32SliceToBytes(hIn)); err != nil {
-		t.Fatal(err)
-	}
-
-	// Pass struct by-value
-	params := ScaleParams{
-		Factor: 3.5,
-		Offset: 42,
-	}
-
-	cfg := driver.LaunchConfig{
-		GridDimX:  (n + 255) / 256,
-		BlockDimX: 256,
-	}
-
-	// 1. Launch with struct passed by value
-	if err := fn.Launch(cfg, dIn, dOut, params, int32(n)); err != nil {
-		t.Fatalf("fn.Launch with struct by-value failed: %v", err)
-	}
-
-	hOut := make([]float32, n)
-	if err := ctx.CopyDtoH(float32SliceToBytes(hOut), dOut); err != nil {
-		t.Fatal(err)
-	}
-
-	for i := 0; i < n; i++ {
-		expected := hIn[i]*params.Factor + float32(params.Offset)
-		if math.Abs(float64(hOut[i]-expected)) > 1e-4 {
-			t.Fatalf("by-value struct mismatch at %d: got %f, expected %f", i, hOut[i], expected)
-		}
-	}
-	t.Log("Successfully verified kernel with struct passed by value!")
-
-	// 2. Launch with pointer to struct
-	params.Factor = 10.0
-	params.Offset = 5
-	if err := fn.Launch(cfg, dIn, dOut, &params, int32(n)); err != nil {
-		t.Fatalf("fn.Launch with pointer to struct failed: %v", err)
-	}
-
-	if err := ctx.CopyDtoH(float32SliceToBytes(hOut), dOut); err != nil {
-		t.Fatal(err)
-	}
-
-	for i := 0; i < n; i++ {
-		expected := hIn[i]*params.Factor + float32(params.Offset)
-		if math.Abs(float64(hOut[i]-expected)) > 1e-4 {
-			t.Fatalf("pointer to struct mismatch at %d: got %f, expected %f", i, hOut[i], expected)
-		}
-	}
-	t.Log("Successfully verified kernel with pointer to struct!")
-}
 
 func TestKernelArgTypes(t *testing.T) {
+
 	// Test primitive constructors and conversions
 	b := driver.Bool(true)
 	if b == nil {

@@ -138,10 +138,11 @@ func main() {
 	}
 
 	if mismatches == 0 {
-		fmt.Printf("SUCCESS: All %d elements computed and verified correctly!\n", n)
+		fmt.Printf("PASS: All %d elements computed and verified correctly!\n", n)
 		fmt.Printf("Sample check: hA[42]=%.1f + hB[42]=%.1f == hC[42]=%.1f\n",
 			hA[42], hB[42], hC[42])
 	} else {
-		log.Fatalf("FAILED: %d mismatches found", mismatches)
+		log.Fatalf("FAIL: %d mismatches found", mismatches)
 	}
+
 }

@@ -60,8 +60,9 @@
 - **Context**: Standard Go memory allocated on the heap is pageable, limiting DMA copy throughput and preventing zero-copy GPU access.
 - **Decision**: Wrap `cuMemAllocHost_v2`, `cuMemFreeHost`, and `cuMemHostGetDevicePointer_v2` in `driver.HostMem`. Expose `HostMem.Bytes()` for idiomatic Go slice access and `HostMem.DevicePointer()` for direct zero-copy GPU kernel execution.
 - **Consequences**:
-  - DMA bandwidth increases to ~13 GB/s.
+  - Eliminates intermediate driver staging buffers during DMA transfers.
   - Zero-copy execution allows GPU kernels to read and write directly to mapped host memory without separate `CopyHtoD` / `CopyDtoH` memcpy calls.
+
 
 ## ADR-0008: Reflection-Based Struct & Primitive Argument Marshaling
 - **Date**: 2026-09-08
@@ -138,7 +139,6 @@
 - **Context**: Real-world GPU compute workloads need demonstrations beyond 1D element-wise kernels to showcase memory coalescing, 2D launch configurations, and shared memory tiling.
 - **Decision**: Provide `kernels/gemm` with a 16x16 shared-memory tiled matrix multiplication kernel and benchmark example (`examples/gemm`).
 - **Consequences**:
-  - Achieves >830 GFLOPS on RTX 4060 Laptop GPU in pure Go without cgo.
   - Serves as an end-to-end blueprint for high-throughput compute kernels.
 
 ## ADR-0017: Warp-Shuffle Parallel Reduction Kernel
@@ -146,8 +146,8 @@
 - **Context**: Reduction (sum, max, min) is a fundamental building block for AI and numerical workloads. Naive global memory atomic adds cause extreme serialization.
 - **Decision**: Implemented `kernels/reduction` leveraging fast warp shuffle intrinsics (`__shfl_down_sync`) and shared memory block reduction, followed by atomic add on partial sums.
 - **Consequences**:
-  - Achieves over 200 GB/s effective memory bandwidth on GeForce RTX 4060 Laptop GPU.
-  - Reduces 10,000,000 floats in ~0.19 ms with single-kernel dispatch.
+  - Achieves single-kernel parallel reduction using hardware register shuffling.
+
 
 ## ADR-0018: Bindless Texture and Surface Objects
 - **Status**: Accepted
@@ -184,7 +184,8 @@
 - **Context**: Moving data between CPU and GPU over PCIe 4.0 often creates a bottleneck if host-to-device, compute, and device-to-host operations run sequentially.
 - **Decision**: Implemented `examples/pipeline` using page-locked pinned host memory (`AllocHost`) and multiple concurrent streams to overlap HtoD copy, kernel compute, and DtoH copy across chunks.
 - **Consequences**:
-  - Achieves 9.79 GB/s end-to-end pipelined throughput on 16M elements (64MB vectors).
+  - Overlaps host-to-device transfer, kernel execution, and device-to-host transfer across multiple streams.
+
 
 ## ADR-0023: Fused Warp-Shuffle RMSNorm Kernel
 - **Status**: Accepted

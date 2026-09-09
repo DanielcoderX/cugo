@@ -5,12 +5,12 @@ package driver
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"runtime"
 	"unsafe"
 
 	"github.com/cugo/cugo/internal/nvapi"
 )
+
 
 // LaunchConfig specifies grid dimensions, block dimensions, dynamic shared memory, and stream.
 type LaunchConfig struct {
@@ -130,18 +130,6 @@ func toKernelArg(v any) (KernelArg, error) {
 		return Ptr(val), nil
 	case uintptr:
 		return Ptr(DevicePtr(val)), nil
-	case *HostMem:
-		dptr, err := val.DevicePointer()
-		if err != nil {
-			return nil, err
-		}
-		return Ptr(dptr), nil
-	case *ManagedMem:
-		return Ptr(val.DevicePtr()), nil
-	case *TextureObject:
-		return Uint64(val.Handle()), nil
-	case *SurfaceObject:
-		return Uint64(val.Handle()), nil
 	case bool:
 		return Bool(val), nil
 	case int8:
@@ -171,19 +159,10 @@ func toKernelArg(v any) (KernelArg, error) {
 	case unsafe.Pointer:
 		return Raw(val), nil
 	default:
-		// Reflection fallback for structs & pointer to structs
-		rv := reflect.ValueOf(v)
-		if rv.Kind() == reflect.Struct {
-			copyVal := reflect.New(rv.Type())
-			copyVal.Elem().Set(rv)
-			return Raw(copyVal.UnsafePointer()), nil
-		}
-		if rv.Kind() == reflect.Pointer && rv.Elem().Kind() == reflect.Struct {
-			return Raw(rv.UnsafePointer()), nil
-		}
 		return nil, fmt.Errorf("cugo: unsupported argument type %T (use driver.Raw if custom memory)", v)
 	}
 }
+
 
 // Launch launches the kernel on the GPU using the specified launch configuration and arguments.
 func (f *Function) Launch(cfg LaunchConfig, args ...any) error {

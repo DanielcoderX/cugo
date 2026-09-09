@@ -1,32 +1,38 @@
 # cugo Benchmarks
 
-Micro-benchmarks measuring raw Driver API dispatch overhead, kernel launch latency, and host-device transfer throughput on Windows (`nvcuda.dll`) without cgo.
+Real, unedited benchmark measurements executed on physical hardware.
 
-## Hardware & Environment
-- **GPU**: NVIDIA GeForce RTX 4060 Laptop GPU (Ada Lovelace, sm_89, 8GB VRAM)
+## Environment & Hardware
+
+- **GPU**: NVIDIA GeForce RTX 4060 Laptop GPU (8188 MiB VRAM, Compute Capability sm_89)
+- **NVIDIA Driver**: 616.64 (CUDA UMD Version 13.4, raw driver version 13040)
 - **CPU**: AMD Ryzen 7 7435HS (16 threads)
-- **Driver**: NVIDIA Driver 616.64 / CUDA Driver 13.4 (raw 13040)
-- **Go Version**: Go 1.26.0 `windows/amd64`
+- **OS**: Windows (WDDM driver model, `windows/amd64`)
+- **Go Version**: `go version go1.26.0 windows/amd64`
 
-## Results
+## Benchmark Command
 
-```
-BenchmarkDriverCallOverhead-16        17293358        67.68 ns/op        16 B/op        2 allocs/op
-BenchmarkKernelLaunchLatency-16         117566      9861.00 ns/op       248 B/op       10 allocs/op
-BenchmarkMemcpyHtoD_1MB-16                8835     118175.00 ns/op     8873.05 MB/s
-BenchmarkMemcpyHtoD_16MB-16                788    1492516.00 ns/op    11240.89 MB/s
-BenchmarkMemcpyDtoH_1MB-16                6186     180604.00 ns/op     5805.93 MB/s
-BenchmarkMemcpyDtoH_16MB-16                676    1775373.00 ns/op     9449.96 MB/s
-BenchmarkPinnedMemcpyHtoD_16MB-16          922    1290513.00 ns/op    13000.43 MB/s    (Pinned Host DMA)
-BenchmarkPinnedMemcpyDtoH_16MB-16          904    1313588.00 ns/op    12772.05 MB/s    (Pinned Host DMA)
+```powershell
+cd bench
+go test -bench Benchmark .
 ```
 
-## Analysis & CGO Comparison
-1. **Dynamic Call Overhead**:
-   Calling raw driver API functions via `Proc.Call` takes **~67 ns**. For comparison, a standard cgo call typically costs ~50-60 ns on modern Go versions. The difference is negligible for GPU workloads where kernel execution and memory transfers dominate by orders of magnitude.
-2. **Kernel Launch Latency**:
-   End-to-end `cuLaunchKernel` overhead (including typed parameter packing and validation) is **~9.8 µs**.
-3. **Memory Throughput**:
-   - **Pageable Memory**: ~11.24 GB/s (HtoD), ~9.45 GB/s (DtoH).
-   - **Pinned (Page-Locked) Host Memory**: **13.00 GB/s (HtoD)**, **12.77 GB/s (DtoH)** — full saturation of the PCIe 4.0 link.
-   - **Zero-Copy Access**: Direct access to host memory via `hMem.DevicePointer()` without memcpy transfers.
+## Raw Output
+
+```
+goos: windows
+goarch: amd64
+pkg: github.com/cugo/cugo/bench
+cpu: AMD Ryzen 7 7435HS                             
+BenchmarkDriverCallOverhead-16      	20473622	        57.10 ns/op	       8 B/op	       1 allocs/op
+BenchmarkVecAddRoundTrip_100K-16    	    4711	    242590 ns/op	4946.62 MB/s	     352 B/op	      17 allocs/op
+PASS
+ok  	github.com/cugo/cugo/bench	3.150s
+```
+
+## Observations
+
+1. **Driver Call Overhead (`BenchmarkDriverCallOverhead`)**:
+   - Calling raw CUDA Driver API functions via lazy Windows dynamic procedures (`nvcuda.dll`) takes **57.10 ns/op** on Go 1.26 windows/amd64.
+2. **End-to-End Vector Addition Round-Trip (`BenchmarkVecAddRoundTrip_100K`)**:
+   - Complete lifecycle for 100,000 `float32` elements (400 KB input A + 400 KB input B HtoD copy, `vecAdd` kernel launch, 400 KB output DtoH copy): **242.59 µs/op** with pageable memory (~4.95 GB/s effective transfer + compute).

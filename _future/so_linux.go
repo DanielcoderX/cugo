@@ -1,6 +1,6 @@
-//go:build linux
+//go:build ignore
 
-package nvapi
+package future
 
 import (
 	"errors"
@@ -11,10 +11,8 @@ import (
 )
 
 var (
-	// ErrDriverNotFound indicates libcuda.so is missing on the system.
 	ErrDriverNotFound = errors.New("cugo: libcuda.so not found: NVIDIA driver not installed or incompatible")
-	// ErrProcNotFound indicates a required function entry point was not exported by libcuda.so.
-	ErrProcNotFound = errors.New("cugo: required CUDA driver symbol not found in libcuda.so")
+	ErrProcNotFound   = errors.New("cugo: required CUDA driver symbol not found in libcuda.so")
 )
 
 var (
@@ -23,7 +21,6 @@ var (
 	libcudaErr  error
 )
 
-// CheckDriver verifies whether libcuda.so can be dynamically loaded on Linux.
 func CheckDriver() error {
 	_, err := openLibcuda()
 	return err
@@ -80,8 +77,4 @@ func (p *linuxLazyProc) Call(args ...uintptr) (r1, r2 uintptr, lastErr error) {
 	}
 	r1, r2, _ = purego.SyscallN(p.addr, args...)
 	return r1, r2, nil
-}
-
-func newDriverProc(name string) procInvoker {
-	return &linuxLazyProc{name: name}
 }

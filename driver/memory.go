@@ -94,4 +94,37 @@ func (c *Context) CopyDtoH(dst []byte, src DevicePtr) error {
 	return nil
 }
 
+// MemsetD8 sets count bytes of device memory to value synchronously.
+func (c *Context) MemsetD8(dst DevicePtr, value uint8, count uint64) error {
+	if dst == 0 {
+		return ErrNullPointer
+	}
+	if count == 0 {
+		return nil
+	}
+	if err := c.EnsureCurrent(); err != nil {
+		return err
+	}
+	if err := nvapi.CuMemsetD8Async(nvapi.CUdeviceptr(dst), value, count, 0); err != nil {
+		return fmt.Errorf("cugo: cuMemsetD8Async: %w", err)
+	}
+	return c.Synchronize()
+}
+
+// MemsetD32 sets count 32-bit words of device memory to value synchronously.
+func (c *Context) MemsetD32(dst DevicePtr, value uint32, count uint64) error {
+	if dst == 0 {
+		return ErrNullPointer
+	}
+	if count == 0 {
+		return nil
+	}
+	if err := c.EnsureCurrent(); err != nil {
+		return err
+	}
+	if err := nvapi.CuMemsetD32Async(nvapi.CUdeviceptr(dst), value, count, 0); err != nil {
+		return fmt.Errorf("cugo: cuMemsetD32Async: %w", err)
+	}
+	return c.Synchronize()
+}
 

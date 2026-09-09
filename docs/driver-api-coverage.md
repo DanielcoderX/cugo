@@ -80,5 +80,9 @@ This document tracks the functions exposed by `cugo` vs the full NVIDIA CUDA Dri
 | `cuGraphGetNodes` | Yes | `Graph.Nodes` | Stable | Inspect node topology inside CUDA graph |
 | `cuGraphNodeGetType` | Yes | `GraphNode.Type` | Stable | Query node type (kernel, memcpy, etc.) |
 | `cuGraphExecKernelNodeSetParams` | Yes | `GraphExec.SetKernelNodeParams` | Stable | Dynamic in-place update of kernel node params |
+| `cuMemsetD8Async` | Yes | `Context.MemsetD8`, `Stream.MemsetD8Async` | Stable | Asynchronous byte memset on stream |
+| `cuMemsetD32Async` | Yes | `Context.MemsetD32`, `Stream.MemsetD32Async` | Stable | Asynchronous 32-bit word memset on stream |
+| `cuStreamWaitEvent` | Yes | `Stream.WaitEvent` | Stable | Non-blocking GPU-side cross-stream synchronization |
+
 
 

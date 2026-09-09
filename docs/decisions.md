@@ -186,6 +186,28 @@
 - **Consequences**:
   - Achieves 9.79 GB/s end-to-end pipelined throughput on 16M elements (64MB vectors).
 
+## ADR-0023: Fused Warp-Shuffle RMSNorm Kernel
+- **Status**: Accepted
+- **Context**: Modern LLMs (e.g. LLaMA, Mistral, Gemma) replace LayerNorm with RMSNorm to eliminate mean-centering overhead. A separate kernel for sum-of-squares and normalization incurs extra global memory roundtrips.
+- **Decision**: Implemented `kernels/layernorm` with a single-pass fused RMSNorm kernel using warp shuffles (`__shfl_down_sync`) for warp-level reduction and shared memory for block-level reduction. Supports optional affine weight scaling in the same pass.
+- **Consequences**:
+  - Verified across configurations up to 64x1024 against CPU double-precision reference.
+
+## ADR-0024: Asynchronous Memset and GPU-Side Stream Event Synchronization
+- **Status**: Accepted
+- **Context**: Buffer initialization and inter-stream dependencies often cause CPU thread contention if handled via synchronous host calls (`cudaMemset`, `cudaStreamSynchronize`).
+- **Decision**: Implemented `cuMemsetD8Async`, `cuMemsetD32Async`, and `cuStreamWaitEvent` with typed wrappers on `Stream` and `Context`.
+- **Consequences**:
+  - Enables GPU hardware engines to initialize memory and coordinate stream dependencies with zero CPU intervention.
+
+## ADR-0025: Multi-GPU NVLink Topology Matrix & Benchmark
+- **Status**: Accepted
+- **Context**: Heterogeneous multi-GPU workstations and servers often have asymmetric interconnects (some GPUs connected via NVLink, others via PCIe). Users need programmatic visibility into P2P performance.
+- **Decision**: Added `examples/p2p-topology` which queries bidirectional accessibility matrices, NVLink performance rank attributes, and benchmarks peer-to-peer DMA bandwidth.
+- **Consequences**:
+  - Provides a single-command inspection tool for multi-GPU interconnect readiness.
+
+
 
 
 

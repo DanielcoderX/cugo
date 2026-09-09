@@ -127,3 +127,68 @@ func (s *Stream) CopyDtoHAsync(dst []byte, src DevicePtr) error {
 	}
 	return nil
 }
+
+// MemsetD8Async sets count bytes of device memory to value asynchronously on this stream.
+func (s *Stream) MemsetD8Async(dst DevicePtr, value uint8, count uint64) error {
+	if dst == 0 {
+		return ErrNullPointer
+	}
+	if count == 0 {
+		return nil
+	}
+	if err := s.ctx.EnsureCurrent(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.closed {
+		return ErrStreamDestroyed
+	}
+	if err := nvapi.CuMemsetD8Async(nvapi.CUdeviceptr(dst), value, count, s.handle); err != nil {
+		return fmt.Errorf("cugo: cuMemsetD8Async: %w", err)
+	}
+	return nil
+}
+
+// MemsetD32Async sets count 32-bit words of device memory to value asynchronously on this stream.
+func (s *Stream) MemsetD32Async(dst DevicePtr, value uint32, count uint64) error {
+	if dst == 0 {
+		return ErrNullPointer
+	}
+	if count == 0 {
+		return nil
+	}
+	if err := s.ctx.EnsureCurrent(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.closed {
+		return ErrStreamDestroyed
+	}
+	if err := nvapi.CuMemsetD32Async(nvapi.CUdeviceptr(dst), value, count, s.handle); err != nil {
+		return fmt.Errorf("cugo: cuMemsetD32Async: %w", err)
+	}
+	return nil
+}
+
+// WaitEvent makes this stream wait for the specified event before executing subsequent operations.
+// The wait is performed entirely on the GPU without blocking the host CPU thread.
+func (s *Stream) WaitEvent(event *Event) error {
+	if event == nil || event.handle == 0 {
+		return errors.New("cugo: nil or uninitialized Event")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.closed {
+		return ErrStreamDestroyed
+	}
+	if err := nvapi.CuStreamWaitEvent(s.handle, event.handle, 0); err != nil {
+		return fmt.Errorf("cugo: cuStreamWaitEvent: %w", err)
+	}
+	return nil
+}
+

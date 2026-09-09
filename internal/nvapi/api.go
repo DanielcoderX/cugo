@@ -108,11 +108,16 @@ var (
 	procProfilerStart = newDriverProc("cuProfilerStart")
 	procProfilerStop  = newDriverProc("cuProfilerStop")
 
-	// Texture and Surface Objects
 	procTexObjectCreate  = newDriverProc("cuTexObjectCreate")
 	procTexObjectDestroy = newDriverProc("cuTexObjectDestroy")
 	procSurfObjectCreate = newDriverProc("cuSurfObjectCreate")
 	procSurfObjectDestroy = newDriverProc("cuSurfObjectDestroy")
+
+	// Memory Set & Stream Wait Event
+	procMemsetD8Async   = newDriverProc("cuMemsetD8Async")
+	procMemsetD32Async  = newDriverProc("cuMemsetD32Async")
+	procStreamWaitEvent = newDriverProc("cuStreamWaitEvent")
+
 )
 
 // CuInit initializes the CUDA driver API. Must be called before any other driver functions.
@@ -1078,3 +1083,45 @@ func CuSurfObjectDestroy(surfObject CUsurfObject) error {
 	r, _, _ := procSurfObjectDestroy.Call(uintptr(surfObject))
 	return ResultToError(CUresult(r))
 }
+
+// CuMemsetD8Async sets device memory to an 8-bit value asynchronously on a stream.
+func CuMemsetD8Async(dstDevice CUdeviceptr, uc uint8, N uint64, hStream CUstream) error {
+	if err := procMemsetD8Async.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemsetD8Async: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemsetD8Async.Call(
+		uintptr(dstDevice),
+		uintptr(uc),
+		uintptr(N),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuMemsetD32Async sets device memory to a 32-bit value asynchronously on a stream.
+func CuMemsetD32Async(dstDevice CUdeviceptr, ui uint32, N uint64, hStream CUstream) error {
+	if err := procMemsetD32Async.Find(); err != nil {
+		return fmt.Errorf("%w: cuMemsetD32Async: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procMemsetD32Async.Call(
+		uintptr(dstDevice),
+		uintptr(ui),
+		uintptr(N),
+		uintptr(hStream),
+	)
+	return ResultToError(CUresult(r))
+}
+
+// CuStreamWaitEvent makes a stream wait on an event without host CPU synchronization.
+func CuStreamWaitEvent(hStream CUstream, hEvent CUevent, flags uint32) error {
+	if err := procStreamWaitEvent.Find(); err != nil {
+		return fmt.Errorf("%w: cuStreamWaitEvent: %v", ErrProcNotFound, err)
+	}
+	r, _, _ := procStreamWaitEvent.Call(
+		uintptr(hStream),
+		uintptr(hEvent),
+		uintptr(flags),
+	)
+	return ResultToError(CUresult(r))
+}
+

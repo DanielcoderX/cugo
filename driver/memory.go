@@ -27,6 +27,16 @@ func (p DevicePtr) IsNil() bool {
 	return p == 0
 }
 
+// Offset returns a new DevicePtr advanced by the specified byte offset.
+func (p DevicePtr) Offset(bytes uint64) DevicePtr {
+	return DevicePtr(uintptr(p) + uintptr(bytes))
+}
+
+// Add returns a new DevicePtr offset by the specified signed byte count.
+func (p DevicePtr) Add(bytes int64) DevicePtr {
+	return DevicePtr(uintptr(int64(p) + bytes))
+}
+
 // Alloc allocates size bytes of linear memory on the GPU within this context.
 func (c *Context) Alloc(size uint64) (DevicePtr, error) {
 	if size == 0 {

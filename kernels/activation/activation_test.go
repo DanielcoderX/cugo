@@ -6,9 +6,9 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/internal/nvapi"
-	"github.com/cugo/cugo/kernels/activation"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/kernels/activation"
 )
 
 func cpuGELU(x float32) float32 {

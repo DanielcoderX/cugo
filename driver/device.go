@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cugo/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
 )
 
 // Device represents a handle to a CUDA compute device.

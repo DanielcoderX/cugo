@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/cugo/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
 )
 
 // LaunchConfig specifies grid dimensions, block dimensions, dynamic shared memory, and stream.

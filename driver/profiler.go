@@ -3,7 +3,7 @@
 package driver
 
 import (
-	"github.com/cugo/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
 )
 
 // ProfilerStart starts CUDA profiling data collection for the current process.

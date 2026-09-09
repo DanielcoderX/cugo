@@ -26,7 +26,7 @@ Output:
 ```
 goos: windows
 goarch: amd64
-pkg: github.com/cugo/cugo/bench
+pkg: github.com/DanielcoderX/cugo/bench
 cpu: AMD Ryzen 7 7435HS                             
 BenchmarkDriverCallOverhead-16       	10020541	        55.86 ns/op	       8 B/op	       1 allocs/op
 BenchmarkKernelLaunchLatency-16      	   56131	     10222 ns/op	     256 B/op	      11 allocs/op
@@ -39,5 +39,5 @@ BenchmarkPinnedMemcpyHtoD_16MB-16    	     441	   1314774 ns/op	12760.53 MB/s	  
 BenchmarkPinnedMemcpyDtoH_16MB-16    	     434	   1345018 ns/op	12473.60 MB/s	      48 B/op	       3 allocs/op
 BenchmarkVecAddRoundTrip_100K-16     	    2152	    240290 ns/op	4993.97 MB/s	     352 B/op	      17 allocs/op
 PASS
-ok  	github.com/cugo/cugo/bench	10.837s
+ok  	github.com/DanielcoderX/cugo/bench	10.837s
 ```

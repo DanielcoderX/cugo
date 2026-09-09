@@ -6,8 +6,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/layernorm"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/layernorm"
 )
 
 func cpuRMSNorm(input []float32, weight []float32, rows, cols int, eps float32) []float32 {

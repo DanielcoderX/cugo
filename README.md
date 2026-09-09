@@ -1,8 +1,8 @@
 # cugo: pure-Go CUDA Driver API bindings (no cgo)
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/cugo/cugo.svg)](https://pkg.go.dev/github.com/cugo/cugo)
+[![Go Reference](https://pkg.go.dev/badge/github.com/DanielcoderX/cugo.svg)](https://pkg.go.dev/github.com/DanielcoderX/cugo)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v1.0.0-green.svg)](https://github.com/cugo/cugo/releases/tag/v1.0.0)
+[![Release](https://img.shields.io/badge/release-v1.0.0-green.svg)](https://github.com/DanielcoderX/cugo/releases/tag/v1.0.0)
 
 `cugo` exposes the NVIDIA CUDA Driver API directly to Go **without cgo** by dynamically loading `nvcuda.dll` at runtime via `golang.org/x/sys/windows`. 
 
@@ -53,7 +53,7 @@ Verified and measured directly on physical hardware (NVIDIA GeForce RTX 4060 Lap
 ## Installation
 
 ```bash
-go get github.com/cugo/cugo
+go get github.com/DanielcoderX/cugo
 ```
 
 Requires Go 1.22+ and NVIDIA display drivers installed. No CUDA Toolkit or C compiler required.
@@ -72,8 +72,8 @@ import (
 	"log"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/vecadd"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/vecadd"
 )
 
 func main() {

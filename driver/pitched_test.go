@@ -8,8 +8,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
 )
 
 func TestPitchedMemoryAndCopy2D(t *testing.T) {

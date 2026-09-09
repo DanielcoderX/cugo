@@ -10,8 +10,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/gemm"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/gemm"
 )
 
 func main() {

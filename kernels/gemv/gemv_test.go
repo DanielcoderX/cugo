@@ -6,8 +6,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/gemv"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/gemv"
 )
 
 func cpuGEMV(A, x, y []float32, m, n int, alpha, beta float32) []float32 {

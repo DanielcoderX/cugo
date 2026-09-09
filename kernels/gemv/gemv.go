@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/cugo/cugo/driver"
+	"github.com/DanielcoderX/cugo/driver"
 )
 
 //go:embed gemv.ptx

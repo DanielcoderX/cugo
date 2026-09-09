@@ -6,7 +6,7 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/cugo/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
 )
 
 var (

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/softmax"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/softmax"
 )
 
 func cpuSoftmax(input []float32, rows, cols int) []float32 {

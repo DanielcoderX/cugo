@@ -9,8 +9,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/reduction"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/reduction"
 )
 
 func main() {

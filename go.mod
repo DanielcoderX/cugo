@@ -1,4 +1,4 @@
-module github.com/cugo/cugo
+module github.com/DanielcoderX/cugo
 
 go 1.26.0
 

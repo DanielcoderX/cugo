@@ -9,9 +9,9 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/internal/nvapi"
-	"github.com/cugo/cugo/kernels/vecadd"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/kernels/vecadd"
 )
 
 func TestDynamicJITLinker(t *testing.T) {

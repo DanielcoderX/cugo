@@ -8,8 +8,8 @@ import (
 	"math"
 	"unsafe"
 
-	"github.com/cugo/cugo/driver"
-	"github.com/cugo/cugo/kernels/vecadd"
+	"github.com/DanielcoderX/cugo/driver"
+	"github.com/DanielcoderX/cugo/kernels/vecadd"
 )
 
 func float32SliceToBytes(s []float32) []byte {

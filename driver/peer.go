@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cugo/cugo/internal/nvapi"
+	"github.com/DanielcoderX/cugo/internal/nvapi"
 )
 
 // CanAccessPeer queries whether device d can directly access memory allocated on peer.

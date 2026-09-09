@@ -19,11 +19,12 @@ var (
 // The same address is accessible from both host CPU and GPU device code.
 // The CUDA driver automatically migrates memory pages on demand.
 type ManagedMem struct {
-	dptr  DevicePtr
-	size  uint64
-	ctx   *Context
-	mu    sync.Mutex
-	freed bool
+	dptr    DevicePtr
+	hostPtr unsafe.Pointer
+	size    uint64
+	ctx     *Context
+	mu      sync.Mutex
+	freed   bool
 }
 
 // AllocManaged allocates size bytes of Unified Memory.
@@ -41,19 +42,20 @@ func (c *Context) AllocManaged(size uint64, flags ...uint32) (*ManagedMem, error
 		f = flags[0]
 	}
 
-	var rawDptr nvapi.CUdeviceptr
-	if err := nvapi.CuMemAllocManaged(&rawDptr, size, f); err != nil {
+	var rawPtr unsafe.Pointer
+	if err := nvapi.CuMemAllocManaged((*nvapi.CUdeviceptr)(unsafe.Pointer(&rawPtr)), size, f); err != nil {
 		return nil, fmt.Errorf("cugo: cuMemAllocManaged(%d bytes): %w", size, err)
 	}
 
 	return &ManagedMem{
-		dptr: DevicePtr(rawDptr),
-		size: size,
-		ctx:  c,
+		dptr:    DevicePtr(uintptr(rawPtr)),
+		hostPtr: rawPtr,
+		size:    size,
+		ctx:     c,
 	}, nil
 }
 
-// Free releases the unified memory allocation.
+// Free frees the Unified Memory buffer.
 func (m *ManagedMem) Free() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -63,10 +65,14 @@ func (m *ManagedMem) Free() error {
 	}
 	m.freed = true
 
+	if err := m.ctx.EnsureCurrent(); err != nil {
+		return err
+	}
 	if err := nvapi.CuMemFree(nvapi.CUdeviceptr(m.dptr)); err != nil {
-		return fmt.Errorf("cugo: cuMemFree: %w", err)
+		return fmt.Errorf("cugo: cuMemFree (managed): %w", err)
 	}
 	m.dptr = 0
+	m.hostPtr = nil
 	return nil
 }
 
@@ -77,15 +83,15 @@ func (m *ManagedMem) DevicePtr() DevicePtr {
 
 // Pointer returns an unsafe.Pointer to the memory for direct CPU access.
 func (m *ManagedMem) Pointer() unsafe.Pointer {
-	return unsafe.Pointer(uintptr(m.dptr))
+	return m.hostPtr
 }
 
 // Bytes returns a byte slice directly backed by the unified memory block.
 func (m *ManagedMem) Bytes() []byte {
-	if m.dptr == 0 || m.size == 0 {
+	if m.hostPtr == nil || m.size == 0 {
 		return nil
 	}
-	return unsafe.Slice((*byte)(unsafe.Pointer(uintptr(m.dptr))), m.size)
+	return unsafe.Slice((*byte)(m.hostPtr), m.size)
 }
 
 // Size returns the allocated size in bytes.

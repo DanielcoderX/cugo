@@ -45,7 +45,7 @@ While existing Go CUDA bindings require a C compiler, CUDA headers, and the CUDA
 
 ## Performance & Micro-benchmarks
 
-Benchmarking is currently pending validation on physical hardware. See [bench/README.md](bench/README.md).
+Verified and measured directly on physical hardware (NVIDIA GeForce RTX 4060 Laptop GPU, Go 1.26 windows/amd64). See [bench/README.md](bench/README.md) for full unedited benchmark measurements.
 
 ---
 
